@@ -24,8 +24,8 @@ public class Profesores {
     private List<String> certificaciones; 
     private String contraseña;
     private Date fechaRegistro;
-    
-    //Metodo constructor
+    private List<Grupos> gruposImpartiendo;
+    //Constructor
     public Profesores() {
     }
     public Profesores(String nombre, String apellido1, String apellido2, 
@@ -42,6 +42,7 @@ public class Profesores {
         this.titulosobtenidos = new ArrayList<>();
         this.contraseña = contraseña;
         this.certificaciones = new ArrayList<>();
+        this.gruposImpartiendo = new ArrayList<>();
         this.fechaRegistro = new Date(); 
     }
     //Setters y getters
@@ -259,14 +260,25 @@ public class Profesores {
     
     //Validación de contraseña
     public String validarContrasena() {
-        if (contraseña == null || contraseña.trim().isEmpty()) {
-            return "La contraseña es requerida";
-        }
-        if (contraseña.length() < 6) {
-            return "La contraseña debe tener al menos 6 caracteres";
-        }
-        return null;
+    if (contraseña == null || contraseña.trim().isEmpty()) {
+        return "Por favor digite la contraseña";
     }
+    if (contraseña.length() < 8) {
+        return "La contraseña debe tener al menos 8 caracteres";
+    }
+    
+    // Verificar que contenga al menos un número
+    if (!contraseña.matches(".*\\d.*")) {
+        return "La contraseña debe contener al menos un número";
+    }
+    
+    // Verificar que contenga al menos un carácter especial
+    if (!contraseña.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+        return "La contraseña debe contener al menos un carácter especial";
+    }
+    
+    return null;
+}
     // Método para validar todo el profesor de una vez
     public List<String> validarProfesorCompleto() {
         List<String> errores = new ArrayList<>();
@@ -282,11 +294,17 @@ public class Profesores {
         
         return errores;
     }
+    //Agregar los errores a una lista
       private void agregarError(List<String> errores, String error) {
         if (error != null) {
             errores.add(error);
         }
     }
-
+    public void agregarGrupo(Grupos grupo) {
+        if (grupo != null && !gruposImpartiendo.contains(grupo)) {
+            this.gruposImpartiendo.add(grupo);
+        }
+    }
+    
 }
 

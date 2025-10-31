@@ -20,9 +20,11 @@ public class Cursos {
     private int maxEstu;
     private String tipo;
     private int calificacionMinima;
+    private List<Grupos> grupos;
     
+     
     public Cursos(){};
-    
+    //Constructor
     public Cursos(String identificacion, String nombre, String descripcion, 
                  int horasDia, String modalidad, int minEstu, 
                  int maxEstu, String tipo, int calificacionMinima){
@@ -35,6 +37,7 @@ public class Cursos {
         this.maxEstu = maxEstu;
         this.tipo = tipo;
         this.calificacionMinima = calificacionMinima;
+        this.grupos = new ArrayList<>();
     }
     // Getters y Setters
     //Identificación
@@ -199,7 +202,18 @@ public class Cursos {
         }
     }
 
-    
+    //Metodo para asociar grupos a un curso,
+    public void agregarGrupo(Grupos grupo) {
+        if (grupo != null && !grupos.contains(grupo)) {
+            // Verificar que no exista un grupo con la misma identificación
+            for (Grupos g : grupos) {
+                if (g.getIdentificacionGrupo() == grupo.getIdentificacionGrupo()) {
+                    throw new IllegalArgumentException("Ya existe un grupo con la identificación: " + grupo.getIdentificacionGrupo());
+                }
+            }
+            this.grupos.add(grupo);
+        }
+    }
 
     }
     
