@@ -1949,18 +1949,30 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     private void abrirVentanaProfesores() {
         // Cerrar ventana actual
         this.dispose();
-        
+
         // Crear nueva ventana
         JFrame ventanaProfesores = new JFrame("Ventana de profesores");
         ventanaProfesores.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         ventanaProfesores.setSize(400, 300);
         ventanaProfesores.setLocationRelativeTo(null);
-        
+
         // Agregar label
         JLabel label = new JLabel("Menú de profesores", JLabel.CENTER);
         label.setFont(new Font("Arial", Font.BOLD, 14));
         ventanaProfesores.add(label, BorderLayout.NORTH);
-        
+
+        // Panel para los botones
+        JPanel panelBoton = new JPanel(new GridLayout(2, 1, 10, 10));
+        panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
+
+        JButton btnIngresarSistema = new JButton("Ingresar al Sistema");
+        btnIngresarSistema.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                abrirLoginProfesores(ventanaProfesores);
+            }
+        });
+
         JButton btnVolver1 = new JButton("Regresar");
         btnVolver1.addActionListener(new ActionListener() {
             @Override
@@ -1971,8 +1983,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
             }
         });
 
-        // Panel para el botón
-        JPanel panelBoton = new JPanel();
+        panelBoton.add(btnIngresarSistema);
         panelBoton.add(btnVolver1);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
@@ -1981,18 +1992,30 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     private void abrirVentanaEstudiantes() {
         // Cerrar ventana actual
         this.dispose();
-        
+
         // Crear nueva ventana
         JFrame ventanaEstudiantes = new JFrame("Ventana de Estudiantes");
         ventanaEstudiantes.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         ventanaEstudiantes.setSize(400, 300);
         ventanaEstudiantes.setLocationRelativeTo(null);
-        
+
         // Agregar label
         JLabel label = new JLabel("Menú de Estudiantes", JLabel.CENTER);
         label.setFont(new Font("Arial", Font.BOLD, 14));
         ventanaEstudiantes.add(label, BorderLayout.NORTH);
-        
+
+        // Panel para los botones
+        JPanel panelBoton = new JPanel(new GridLayout(2, 1, 10, 10));
+        panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
+
+        JButton btnIngresarSistema = new JButton("Ingresar al Sistema");
+        btnIngresarSistema.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                abrirLoginEstudiantes(ventanaEstudiantes);
+            }
+        });
+
         JButton btnVolver1 = new JButton("Regresar");
         btnVolver1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -2001,17 +2024,220 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 new Sistemadematriculaycalificaciones().setVisible(true);
             }
         });
-        JPanel panelBoton = new JPanel();
+
+        panelBoton.add(btnIngresarSistema);
         panelBoton.add(btnVolver1);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
-        
+
         ventanaEstudiantes.setVisible(true);
     }
-    
-   
-    
-    
-    
+
+    private void abrirLoginProfesores(JFrame ventanaAnterior) {
+        // Crear diálogo de login
+        JDialog dialogLogin = new JDialog(ventanaAnterior, "Login de Profesores", true);
+        dialogLogin.setSize(400, 250);
+        dialogLogin.setLocationRelativeTo(ventanaAnterior);
+        dialogLogin.setLayout(new BorderLayout());
+
+        // Panel principal
+        JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Título
+        JLabel lblTitulo = new JLabel("Ingreso de Profesores", JLabel.CENTER);
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        panelPrincipal.add(lblTitulo, gbc);
+
+        // Campo de identificación
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        panelPrincipal.add(new JLabel("Identificación:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField txtIdentificacion = new JTextField(20);
+        panelPrincipal.add(txtIdentificacion, gbc);
+
+        // Campo de contraseña
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        panelPrincipal.add(new JLabel("Contraseña:"), gbc);
+
+        gbc.gridx = 1;
+        JPasswordField txtContrasena = new JPasswordField(20);
+        panelPrincipal.add(txtContrasena, gbc);
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+        JButton btnIngresar = new JButton("Ingresar");
+        JButton btnCancelar = new JButton("Cancelar");
+
+        btnIngresar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String identificacion = txtIdentificacion.getText().trim();
+                String contrasena = new String(txtContrasena.getPassword());
+
+                if (identificacion.isEmpty() || contrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialogLogin,
+                        "Por favor ingrese identificación y contraseña",
+                        "Campos vacíos",
+                        JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Buscar el profesor en la lista
+                Profesores profesorEncontrado = null;
+                for (Profesores profesor : profesores) {
+                    if (profesor.ingresoSistema(identificacion, contrasena)) {
+                        profesorEncontrado = profesor;
+                        break;
+                    }
+                }
+
+                if (profesorEncontrado != null) {
+                    JOptionPane.showMessageDialog(dialogLogin,
+                        "Bienvenido/a " + profesorEncontrado.getNombre() + " " +
+                        profesorEncontrado.getApellido1(),
+                        "Ingreso exitoso",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    dialogLogin.dispose();
+                    // Aquí puedes agregar código para abrir la ventana del profesor autenticado
+                } else {
+                    JOptionPane.showMessageDialog(dialogLogin,
+                        "Identificación o contraseña incorrecta",
+                        "Error de autenticación",
+                        JOptionPane.ERROR_MESSAGE);
+                    txtContrasena.setText("");
+                }
+            }
+        });
+
+        btnCancelar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialogLogin.dispose();
+            }
+        });
+
+        panelBotones.add(btnIngresar);
+        panelBotones.add(btnCancelar);
+
+        dialogLogin.add(panelPrincipal, BorderLayout.CENTER);
+        dialogLogin.add(panelBotones, BorderLayout.SOUTH);
+
+        dialogLogin.setVisible(true);
+    }
+
+    private void abrirLoginEstudiantes(JFrame ventanaAnterior) {
+        // Crear diálogo de login
+        JDialog dialogLogin = new JDialog(ventanaAnterior, "Login de Estudiantes", true);
+        dialogLogin.setSize(400, 250);
+        dialogLogin.setLocationRelativeTo(ventanaAnterior);
+        dialogLogin.setLayout(new BorderLayout());
+
+        // Panel principal
+        JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Título
+        JLabel lblTitulo = new JLabel("Ingreso de Estudiantes", JLabel.CENTER);
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        panelPrincipal.add(lblTitulo, gbc);
+
+        // Campo de identificación
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        panelPrincipal.add(new JLabel("Identificación:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField txtIdentificacion = new JTextField(20);
+        panelPrincipal.add(txtIdentificacion, gbc);
+
+        // Campo de contraseña
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        panelPrincipal.add(new JLabel("Contraseña:"), gbc);
+
+        gbc.gridx = 1;
+        JPasswordField txtContrasena = new JPasswordField(20);
+        panelPrincipal.add(txtContrasena, gbc);
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+        JButton btnIngresar = new JButton("Ingresar");
+        JButton btnCancelar = new JButton("Cancelar");
+
+        btnIngresar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String identificacion = txtIdentificacion.getText().trim();
+                String contrasena = new String(txtContrasena.getPassword());
+
+                if (identificacion.isEmpty() || contrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialogLogin,
+                        "Por favor ingrese identificación y contraseña",
+                        "Campos vacíos",
+                        JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Buscar el estudiante en la lista
+                Estudiantes estudianteEncontrado = null;
+                for (Estudiantes estudiante : estudiantes) {
+                    if (estudiante.ingresoSistema(identificacion, contrasena)) {
+                        estudianteEncontrado = estudiante;
+                        break;
+                    }
+                }
+
+                if (estudianteEncontrado != null) {
+                    JOptionPane.showMessageDialog(dialogLogin,
+                        "Bienvenido/a " + estudianteEncontrado.getNombre() + " " +
+                        estudianteEncontrado.getApellido1(),
+                        "Ingreso exitoso",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    dialogLogin.dispose();
+                    // Aquí puedes agregar código para abrir la ventana del estudiante autenticado
+                } else {
+                    JOptionPane.showMessageDialog(dialogLogin,
+                        "Identificación o contraseña incorrecta",
+                        "Error de autenticación",
+                        JOptionPane.ERROR_MESSAGE);
+                    txtContrasena.setText("");
+                }
+            }
+        });
+
+        btnCancelar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialogLogin.dispose();
+            }
+        });
+
+        panelBotones.add(btnIngresar);
+        panelBotones.add(btnCancelar);
+
+        dialogLogin.add(panelPrincipal, BorderLayout.CENTER);
+        dialogLogin.add(panelBotones, BorderLayout.SOUTH);
+
+        dialogLogin.setVisible(true);
+    }
+
     public static void main(String[] args) {
         // Ejecutar en el Event Dispatch Thread
         SwingUtilities.invokeLater(new Runnable() {

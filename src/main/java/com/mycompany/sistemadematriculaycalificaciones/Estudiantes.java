@@ -22,17 +22,19 @@ public class Estudiantes implements Serializable {
     private String correo;
     private String direccion;
     private String organizacion;
-    private List<String> temasInteres; 
+    private List<String> temasInteres;
     private String contraseña;
     private Date fechaRegistro;
+    private List<Grupos> gruposMatriculados;
     
     
     private static final long serialVersionUID = 1L;
     //Constructor
     public Estudiantes() {
+        this.gruposMatriculados = new ArrayList<>();
     }
-    public Estudiantes(String nombre, String apellido1, String apellido2, 
-                  String identificacion, String telefono, String correo, 
+    public Estudiantes(String nombre, String apellido1, String apellido2,
+                  String identificacion, String telefono, String correo,
                   String direccion, String organizacion, List<String> temasInteres, String contraseña) {
     this();
     this.nombre = nombre;
@@ -45,14 +47,15 @@ public class Estudiantes implements Serializable {
     this.organizacion = organizacion;
     this.temasInteres = temasInteres != null ? temasInteres : new ArrayList<>();
     this.contraseña = contraseña;
+    this.hashContraseña = crearHashSeguro(contraseña); // Hashear la contraseña al crear el objeto
     this.fechaRegistro = new Date();
     }
     
     private String hashContraseña;
     //Setters y getters
     //Nombre
-    public String getNombre() 
-    { return identificacion; 
+    public String getNombre()
+    { return nombre;
     }
     public void setNombre(String nombre) { 
         this.nombre = nombre; 
@@ -140,12 +143,17 @@ public class Estudiantes implements Serializable {
     }
 
     // Para validar cuando el usuario ingrese contraseña
-    public boolean validarContraseña(String contraseñaIngresada) {
+    public boolean compararContrasena(String contraseñaIngresada) {
         return crearHashSeguro(contraseñaIngresada).equals(this.hashContraseña);
-}
+    }
+    
     //Fecha de registro
-    public Date getFechaRegistro() 
-    { return fechaRegistro; 
+    public Date getFechaRegistro()
+    { return fechaRegistro;
+    }
+    //Grupos matriculados
+    public List<Grupos> getGruposMatriculados() {
+        return gruposMatriculados;
     }
     public String validarTodosLosTemasInteres() {
     if (temasInteres == null || temasInteres.isEmpty()) {
@@ -325,6 +333,48 @@ public class Estudiantes implements Serializable {
         if (error != null) {
             errores.add(error);
         }
+    }
+      
+    public boolean ingresoSistema(String identificacion, String contrasena) {
+        if (identificacion.equals(this.identificacion)) {
+            if (compararContrasena(contrasena)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String matricularCurso(Cursos curso, Grupos grupo) {
+        if (curso == null) {
+            return "El curso no puede ser nulo";
+        }
+
+        if (grupo == null) {
+            return "El grupo no puede ser nulo";
+        }
+
+        if (!curso.getGrupos().contains(grupo)) {
+            return "El grupo " + grupo.getIdentificacionGrupo() + " no pertenece al curso " + curso.getNombre();
+        }
+
+        if (gruposMatriculados.contains(grupo)) {
+            return "Ya estás matriculado en el grupo " + grupo.getIdentificacionGrupo() + " del curso " + curso.getNombre();
+        }
+
+        int cantidadActualEstudiantes = grupo.getEstudiantes().size();
+        if (cantidadActualEstudiantes >= curso.getMaxEstudiantes()) {
+            return "El grupo " + grupo.getIdentificacionGrupo() + " ha alcanzado su capacidad máxima de " + curso.getMaxEstudiantes() + " estudiantes";
+        }
+
+        grupo.agregarEstudiante(this);
+
+        gruposMatriculados.add(grupo);
+
+        return "Matriculado satisfactoriamente.";
+    }
+
+    public boolean estaMatriculadoEn(Grupos grupo) {
+        return gruposMatriculados.contains(grupo);
     }
 
 }

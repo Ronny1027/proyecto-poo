@@ -5,6 +5,7 @@
 package com.mycompany.sistemadematriculaycalificaciones;
 
 import java.io.Serializable;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -26,13 +27,14 @@ public class Profesores implements Serializable{
     private String contraseña;
     private Date fechaRegistro;
     private List<Grupos> gruposImpartiendo;
+    private String hashContrasena;
     
     private static final long serialVersionUID = 1L;
     //Constructor
     public Profesores() {
     }
-    public Profesores(String nombre, String apellido1, String apellido2, 
-                  String identificacion, String telefono, String correo, 
+    public Profesores(String nombre, String apellido1, String apellido2,
+                  String identificacion, String telefono, String correo,
                   String direccion, List<String> titulosobtenidos, List<String> certificaciones, String contraseña) {
         this();
         this.nombre = nombre;
@@ -45,6 +47,7 @@ public class Profesores implements Serializable{
         this.titulosobtenidos = titulosobtenidos != null ? titulosobtenidos : new ArrayList<>();
         this.certificaciones = certificaciones != null ? certificaciones : new ArrayList<>();
         this.contraseña = contraseña;
+        this.hashContrasena = crearHashSeguro(contraseña); // Hashear la contraseña al crear el objeto
         this.gruposImpartiendo = new ArrayList<>();
         this.fechaRegistro = new Date();
 }
@@ -115,12 +118,35 @@ public class Profesores implements Serializable{
     public void setCertificaciones(List<String> certificaciones) {
         this.certificaciones = certificaciones; 
     }
-    //Contraseña
-    public String getContrasena() {
-        return contraseña; 
+    
+    //Implementación de Hash para guardar la contraseña de forma segura.
+    private String crearHashSeguro(String contraseña) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hash = md.digest(contraseña.getBytes("UTF-8"));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hash) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    } catch (Exception e) {
+        throw new RuntimeException("Error al crear hash", e);
     }
+}
+    
+    // Setter con Hash
     public void setContrasena(String contraseña) {
-        this.contraseña = contraseña; 
+        this.hashContrasena = crearHashSeguro(contraseña);
+    }
+
+    // Getter con Hash
+    public String getContrasena() {
+        return "********"; //Solo devuelve asteriscos
+    }
+
+    // Para validar cuando el usuario ingrese contraseña
+    public boolean compararContrasena(String contraseñaIngresada) {
+        return crearHashSeguro(contraseñaIngresada).equals(this.hashContrasena);
     }
     //Fecha de registro
     public Date getFechaRegistro() 
@@ -346,6 +372,14 @@ public String validarTodasLasCertificaciones() {
         }
     }
     
+    public boolean ingresoSistema(String identificacion, String contrasena) {
+        if (identificacion.equals(this.identificacion)) {
+            if (compararContrasena(contrasena)) {
+                return true;
+            }
+        }
+        return false;
+    }
     
 }
 
