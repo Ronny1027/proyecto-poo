@@ -31,10 +31,16 @@ public class Grupos implements Serializable {
    private static final long serialVersionUID = 1L;
    //getter y setter necesario
    public int getIdentificacionGrupo() {
-       return identificacionGrupo; 
+       return identificacionGrupo;
    }
-    public void setIdentificacionGrupo(int identificacionGrupo) { 
-        this.identificacionGrupo = identificacionGrupo; 
+    public void setIdentificacionGrupo(int identificacionGrupo) {
+        this.identificacionGrupo = identificacionGrupo;
+    }
+    public Cursos getCurso() {
+        return curso;
+    }
+    public List<Estudiantes> getEstudiantes() {
+        return estudiantes;
     }
    //Metodos de validacion.
    // Validar la identificacion.
