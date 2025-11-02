@@ -8,10 +8,11 @@ package com.mycompany.sistemadematriculaycalificaciones;
  *
  * @author ronni
  */
+import java.io.Serializable;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
-public class Grupos {
+public class Grupos implements Serializable {
     private int identificacionGrupo;
     private Date fechaInicio;
     private Date fechaFin;
@@ -27,6 +28,7 @@ public class Grupos {
        this.curso = curso;
        this.estudiantes = new ArrayList<>();
    }
+   private static final long serialVersionUID = 1L;
    //getter y setter necesario
    public int getIdentificacionGrupo() {
        return identificacionGrupo; 

@@ -26,6 +26,7 @@ public class Estudiantes implements Serializable {
     private String contraseña;
     private Date fechaRegistro;
     
+    
     private static final long serialVersionUID = 1L;
     //Constructor
     public Estudiantes() {
@@ -46,6 +47,7 @@ public class Estudiantes implements Serializable {
     this.contraseña = contraseña;
     this.fechaRegistro = new Date();
     }
+    
     private String hashContraseña;
     //Setters y getters
     //Nombre
@@ -170,11 +172,7 @@ public class Estudiantes implements Serializable {
     }
     return String.join(", ", temasInteres);
 }
-    
-    public void eliminarTemaInteres(String tema) {
-        this.temasInteres.remove(tema);
-    }
-    
+ 
     public void limpiarTemasInteres() {
         this.temasInteres.clear();
     }
