@@ -18,7 +18,6 @@ import javax.mail.internet.*;
 import javax.mail.MessagingException;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
-import java.util.Random;
 
 public class Sistemadematriculaycalificaciones extends JFrame {
     
@@ -217,31 +216,6 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         ois.close();
     } catch (IOException | ClassNotFoundException e) {
         cursos = new ArrayList<>();
-    }
-    }
-    //Evaluaciones
-    private java.util.List<Evaluaciones> evaluaciones = new java.util.ArrayList<>();
-    private static final String ARCHIVO_EVALUACIONES = "evaluaciones.dat";
-    private void guardarEvaluacionesEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES))) {
-        oos.writeObject(cursos);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de cursos.
-    private void cargarEvaluacionesDesdeArchivo() {
-    File archivo = new File(ARCHIVO_EVALUACIONES);
-    if (!archivo.exists()) {
-        evaluaciones = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES));
-        evaluaciones = (List<Evaluaciones>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        evaluaciones = new ArrayList<>();
     }
     }
     private void registrarEstudiante(JTextField txtNom, JTextField txtApel1, JTextField txtApel2,
@@ -1682,6 +1656,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         JButton btnAsignar = new JButton("Asignar grupo");
         btnAsignar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAsignar.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
             asignarGrupoACurso(txtIdentGru, txtFechaIni, txtFechaFin, txtIdentCur, ventanaAsoGruCur);
             }
@@ -1852,7 +1827,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
             }
         });
         // Botón Volver
-        JButton btnVolver = new JButton("Regresar");
+        JButton btnVolver = new JButton("Volver");
         btnVolver.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnVolver.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -1971,222 +1946,6 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         ventanaAdministradores.add(panelBoton, BorderLayout.CENTER);
         ventanaAdministradores.setVisible(true);
     }
-        //Funciones para generar la identificación aleatoria.
-    private String generarIdentificacionUnica() {
-    Random random = new Random();
-    String nuevaIdentificacion;
-    
-    // Generar IDs hasta encontrar uno único
-    do {
-        // Generar número entre 100000 y 999999 (6 dígitos)
-        int num = random.nextInt(900000) + 100000;
-        nuevaIdentificacion = String.valueOf(num);
-    } while (existeIdentificacionEvaluacion(nuevaIdentificacion));
-    
-    return nuevaIdentificacion;
-    }
-
-    private boolean existeIdentificacionEvaluacion(String identificacion) {
-    for (Evaluaciones eval : evaluaciones) {
-        if (eval.getIdentificacion() == Integer.parseInt(identificacion)) {
-            return true;
-        }
-    }
-    return false;
-    }
-    private void abriVentanaEvaluaciones(){
-        this.dispose();
-        // Crear nueva ventana
-        JFrame ventanaEvaluaciones = new JFrame("Evaluaciones");
-        ventanaEvaluaciones.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ventanaEvaluaciones.setSize(400, 300);
-        ventanaEvaluaciones.setLocationRelativeTo(null);
-        // Agregar label de titulo
-        JLabel label = new JLabel("Administración de evaluaciones", JLabel.CENTER);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
-        ventanaEvaluaciones.add(label, BorderLayout.NORTH);
-        
-        //Panel para poder mostrar el CRUD.
-        JPanel panelCentral = new JPanel();
-        panelCentral.setLayout(new BoxLayout(panelCentral, BoxLayout.Y_AXIS));
-        
-        //Labels y text box requeridos
-        //Identificación de la evaluación.
-        JLabel label1 = new JLabel("Identificación de la evaluación.");
-        label1.setFont(new Font("Arial", Font.BOLD, 14));
-        label1.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-        
-        JTextField txtIdentEva = new JTextField(20);
-        txtIdentEva.setMaximumSize(new Dimension(200, 25)); // Tamaño máximo
-        txtIdentEva.setAlignmentX(Component.CENTER_ALIGNMENT);
-        //Nombre de la evaluación
-        JLabel label2 = new JLabel("Nombre de la evaluación");
-        label2.setFont(new Font("Arial", Font.BOLD, 14));
-        label2.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-        
-        JTextField txtNomEva = new JTextField(20);
-        txtNomEva.setMaximumSize(new Dimension(200, 25)); // Tamaño máximo
-        txtNomEva.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        //Instrucciones generales
-        JLabel label3 = new JLabel("Instrucciones generales");
-        label3.setFont(new Font("Arial", Font.BOLD, 14));
-        label3.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-       
-        JTextField txtInstru = new JTextField(20);
-        txtInstru.setMaximumSize(new Dimension(200, 25)); // Tamaño máximo
-        txtInstru.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        //Objetivos de la evaluación.
-        JLabel label4 = new JLabel("Objetivos de la evaluación");
-        label4.setFont(new Font("Arial", Font.BOLD, 14));
-        label4.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-       
-        JTextField txtObjeti = new JTextField(20);
-        txtObjeti.setMaximumSize(new Dimension(200, 25)); // Tamaño máximo
-        txtObjeti.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        //Duración de la evaluación.
-        JLabel label5 = new JLabel("Duración de la evaluación");
-        label5.setFont(new Font("Arial", Font.BOLD, 14));
-        label5.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-       
-        JTextField txtDuracion = new JTextField(20);
-        txtDuracion.setMaximumSize(new Dimension(200, 25)); // Tamaño máximo
-        txtDuracion.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        String[] modos = {"On", "Off"};
-        //Preguntas en orden aleatorio
-        JLabel label6 = new JLabel("Preguntas aleatorias");
-        label6.setFont(new Font("Arial", Font.BOLD, 14));
-        label6.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-        
-        
-        JComboBox<String> comboPreguntAlea = new JComboBox<>(modos);
-        comboPreguntAlea.setMaximumSize(new Dimension(200, 25));
-        comboPreguntAlea.setAlignmentX(Component.CENTER_ALIGNMENT);
-        //Respuestas en orden aleatorio
-        JLabel label7 = new JLabel("Respuestas aleatorias");
-        label7.setFont(new Font("Arial", Font.BOLD, 14));
-        label7.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
-        
-        JComboBox<String> comboRespuestAlea = new JComboBox<>(modos);
-        comboRespuestAlea.setMaximumSize(new Dimension(200, 25));
-        comboRespuestAlea.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label1);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(txtIdentEva);
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label2);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(txtNomEva);
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label3);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(txtInstru);
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label4);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(txtObjeti);
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label5);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(txtDuracion);
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label6);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(comboPreguntAlea);
-        panelCentral.add(Box.createVerticalStrut(10)); // Espacio
-        panelCentral.add(label7);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(comboRespuestAlea);
-        
-        ventanaEvaluaciones.add(panelCentral, BorderLayout.CENTER);
-        //Para generar una identificación con el sistema.
-        String idUnica = generarIdentificacionUnica();
-        txtIdentEva.setText(idUnica);
-        txtIdentEva.setEditable(false); 
-        //Espacio de los botones
-        // Botones para tipos de preguntas (en columna)
-        JButton btnAgregarSeleccionUnica = new JButton("Selección Única");
-        JButton btnAgregarSeleccionMultiple = new JButton("Selección Múltiple");
-        JButton btnAgregarFalsoVerdadero = new JButton("Falso/Verdadero");
-        JButton btnAgregarPareo = new JButton("Pareo");
-
-        // Botones de operaciones CRUD (en parejas)
-        JButton btnAgregar = new JButton("Agregar");
-        JButton btnModificar = new JButton("Modificar");
-        JButton btnEliminar = new JButton("Eliminar");
-        JButton btnConsultar = new JButton("Consultar");
-
-        // Botón regresar solo
-        JButton btnRegresar = new JButton("Regresar");
-        btnRegresar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnRegresar.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                ventanaEvaluaciones.dispose(); 
-                abrirVentanaProfesores(); 
-            }
-        });
-
-        // Configurar tamaños y alineación
-        btnAgregarSeleccionUnica.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnAgregarSeleccionMultiple.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnAgregarFalsoVerdadero.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnAgregarPareo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnAgregar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnModificar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnEliminar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnConsultar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnRegresar.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Lista para mostrar preguntas
-        JList<String> listaPreguntas = new JList<>();
-        JScrollPane scrollPreguntas = new JScrollPane(listaPreguntas);
-        scrollPreguntas.setPreferredSize(new Dimension(300, 150));
-
-        // Agregar al panel central en el orden que pides
-        panelCentral.add(Box.createVerticalStrut(10));
-
-        // Primeros 4 botones en columna (tipos de pregunta)
-        panelCentral.add(btnAgregarSeleccionUnica);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(btnAgregarSeleccionMultiple);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(btnAgregarFalsoVerdadero);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(btnAgregarPareo);
-
-        panelCentral.add(Box.createVerticalStrut(15));
-
-        // Lista de preguntas
-        panelCentral.add(scrollPreguntas);
-
-        panelCentral.add(Box.createVerticalStrut(15));
-
-        // Botones CRUD en parejas
-        JPanel panelCRUD1 = new JPanel();
-        panelCRUD1.setLayout(new FlowLayout());
-        panelCRUD1.add(btnAgregar);
-        panelCRUD1.add(btnModificar);
-
-        JPanel panelCRUD2 = new JPanel();
-        panelCRUD2.setLayout(new FlowLayout());
-        panelCRUD2.add(btnEliminar);
-        panelCRUD2.add(btnConsultar);
-
-        panelCentral.add(panelCRUD1);
-        panelCentral.add(Box.createVerticalStrut(5));
-        panelCentral.add(panelCRUD2);
-
-        panelCentral.add(Box.createVerticalStrut(15));
-
-        // Botón regresar solo
-        panelCentral.add(btnRegresar);
-        ventanaEvaluaciones.setVisible(true);
-    }
     private void abrirVentanaProfesores() {
         // Cerrar ventana actual
         this.dispose();
@@ -2204,30 +1963,17 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         
         JButton btnVolver1 = new JButton("Regresar");
         btnVolver1.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 // Cerrar ventana actual y abrir la principal
                 ventanaProfesores.dispose();
                 new Sistemadematriculaycalificaciones().setVisible(true);
             }
         });
-        JButton btnConsultarInfo = new JButton("Consultar info");
-        btnConsultarInfo.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(null, "Aqui va la funcion de consultar info");
-            }
-        });
-        JButton btnEvaluaciones = new JButton("Evaluaciones");
-        btnEvaluaciones.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                abriVentanaEvaluaciones();
-            }
-        });
 
         // Panel para el botón
         JPanel panelBoton = new JPanel();
         panelBoton.add(btnVolver1);
-        panelBoton.add(btnConsultarInfo);
-        panelBoton.add(btnEvaluaciones);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
         ventanaProfesores.setVisible(true);
