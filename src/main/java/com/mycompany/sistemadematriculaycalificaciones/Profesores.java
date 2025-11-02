@@ -4,6 +4,7 @@
  */
 package com.mycompany.sistemadematriculaycalificaciones;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  *
  * @author ronni
  */
-public class Profesores {
+public class Profesores implements Serializable{
     private String nombre;
     private String apellido1;
     private String apellido2;
@@ -25,12 +26,14 @@ public class Profesores {
     private String contraseña;
     private Date fechaRegistro;
     private List<Grupos> gruposImpartiendo;
+    
+    private static final long serialVersionUID = 1L;
     //Constructor
     public Profesores() {
     }
     public Profesores(String nombre, String apellido1, String apellido2, 
-                      String identificacion, String telefono, String correo, 
-                      String direccion, String contraseña) {
+                  String identificacion, String telefono, String correo, 
+                  String direccion, List<String> titulosobtenidos, List<String> certificaciones, String contraseña) {
         this();
         this.nombre = nombre;
         this.apellido1 = apellido1;
@@ -39,12 +42,13 @@ public class Profesores {
         this.telefono = telefono;
         this.correo = correo;
         this.direccion = direccion;
-        this.titulosobtenidos = new ArrayList<>();
+        this.titulosobtenidos = titulosobtenidos != null ? titulosobtenidos : new ArrayList<>();
+        this.certificaciones = certificaciones != null ? certificaciones : new ArrayList<>();
         this.contraseña = contraseña;
-        this.certificaciones = new ArrayList<>();
         this.gruposImpartiendo = new ArrayList<>();
-        this.fechaRegistro = new Date(); 
-    }
+        this.fechaRegistro = new Date();
+}
+    
     //Setters y getters
     //Nombre
     public String getNombre() { 
@@ -150,6 +154,17 @@ public class Profesores {
     public void limpiarTitulos() {
         this.titulosobtenidos.clear();
     }
+    // Getter para la lista de grupos
+    public List<Grupos> getGruposImpartiendo() {
+        return gruposImpartiendo;
+    }
+
+    // Método para agregar grupo al profesor
+    public void agregarGrupo(Grupos grupo) {
+        if (grupo != null && !gruposImpartiendo.contains(grupo)) {
+            this.gruposImpartiendo.add(grupo);
+        }
+    }
     //Validación de los datos
     //Validación del nombre:
     public String validarNombre() {
@@ -164,7 +179,7 @@ public class Profesores {
     //Validación del primer apellido
     public String validarApellido1() {
         if (apellido1 == null || apellido1.trim().isEmpty()) {
-            return "El primer apellido es requerido";
+            return "Por favor digite el primer apellido";
         }
         if (apellido1.length() < 2 || apellido1.length() > 20) {
             return "El primer apellido debe tener entre 2 y 20 caracteres";
@@ -174,7 +189,7 @@ public class Profesores {
     //Validación del segundo apellido
     public String validarApellido2() {
         if (apellido2 == null || apellido2.trim().isEmpty()) {
-            return "El segundo apellido es requerido";
+            return "Por favor digite el segundo apellido";
         }
         if (apellido2.length() < 2 || apellido2.length() > 20) {
             return "El segundo apellido debe tener entre 2 y 20 caracteres";
@@ -184,7 +199,7 @@ public class Profesores {
     //Validación de la identificación
     public String validarIdentificacion() {
         if (identificacion == null || identificacion.trim().isEmpty()) {
-            return "La identificación es requerida";
+            return "Por favor digite la identificación";
         }
         if (identificacion.length() < 9) {
             return "La identificación debe tener al menos 9 caracteres";
@@ -194,7 +209,7 @@ public class Profesores {
     //Validación del telefono.
     public String validarTelefono() {
         if (telefono == null || telefono.trim().isEmpty()) {
-            return "El teléfono es requerido";
+            return "Por favor digite el número de telefono";
         }
         if (telefono.length() < 8) {
             return "El teléfono debe tener al menos 8 caracteres";
@@ -208,7 +223,7 @@ public class Profesores {
     public String validarCorreo() {
         //Primero se valida que el correo no este en blanco
         if (correo == null || correo.trim().isEmpty()) {
-            return "El correo electrónico es requerido";
+            return "Por favor digite el correo electrónico";
         }
         if (correo.contains(" ")) {
             return "El correo no puede contener espacios en blanco";
@@ -229,7 +244,7 @@ public class Profesores {
     //Validacion de la dirección
     public String validarDireccion() {
         if (direccion == null || direccion.trim().isEmpty()) {
-            return "La dirección es requerida";
+            return "Por favor digite la dirección";
         }
         if (direccion.length() < 5 || direccion.length() > 60) {
             return "La dirección debe tener entre 5 y 60 caracteres";
@@ -240,20 +255,20 @@ public class Profesores {
     //Validación de los temas de interes
     public String validarCertificaciones(String certificacion) {
         if (certificacion == null || certificacion.trim().isEmpty()) {
-            return "El tema de interés no puede estar vacío";
+            return "Por favor digite al menos UNA certificación";
         }
         if (certificacion.length() < 5 || certificacion.length() > 40) {
-            return "Cada tema de interés debe tener entre 5 y 30 caracteres";
+            return "Cada certificación debe tener entre 5 y 30 caracteres";
         }
         return null;
     }
     //Validación de los titulos
     public String validarTitulosObtenidos(String titulo) {
         if (titulo == null || titulo.trim().isEmpty()) {
-            return "El tema de interés no puede estar vacío";
+            return "Por favor digite al menos UN titulo obtenido ";
         }
         if (titulo.length() < 5 || titulo.length() > 40) {
-            return "Cada tema de interés debe tener entre 5 y 40 caracteres";
+            return "Cada titulo debe tener entre 5 y 40 caracteres";
         }
         return null;
     }
@@ -279,6 +294,35 @@ public class Profesores {
     
     return null;
 }
+    // Validar todos los títulos
+public String validarTodosLosTitulos() {
+    if (titulosobtenidos == null || titulosobtenidos.isEmpty()) {
+        return "Debe agregar al menos un título obtenido";
+    }
+    
+    for (String titulo : titulosobtenidos) {
+        String error = validarTitulosObtenidos(titulo);
+        if (error != null) {
+            return error;
+        }
+    }
+    return null;
+}
+
+// Validar todas las certificaciones
+public String validarTodasLasCertificaciones() {
+    if (certificaciones == null || certificaciones.isEmpty()) {
+        return "Debe agregar al menos una certificación";
+    }
+    
+    for (String certificacion : certificaciones) {
+        String error = validarCertificaciones(certificacion);
+        if (error != null) {
+            return error;
+        }
+    }
+    return null;
+}
     // Método para validar todo el profesor de una vez
     public List<String> validarProfesorCompleto() {
         List<String> errores = new ArrayList<>();
@@ -291,7 +335,8 @@ public class Profesores {
         agregarError(errores, validarCorreo());
         agregarError(errores, validarDireccion());
         agregarError(errores, validarContrasena());
-        
+        agregarError(errores, validarTodosLosTitulos());
+        agregarError(errores, validarTodasLasCertificaciones());
         return errores;
     }
     //Agregar los errores a una lista
@@ -300,11 +345,7 @@ public class Profesores {
             errores.add(error);
         }
     }
-    public void agregarGrupo(Grupos grupo) {
-        if (grupo != null && !gruposImpartiendo.contains(grupo)) {
-            this.gruposImpartiendo.add(grupo);
-        }
-    }
+    
     
 }
 
