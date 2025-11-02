@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.mycompany.sistemadematriculaycalificaciones;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
  *
  * @author ronni
  */
-public class Cursos {
+public class Cursos implements Serializable{
     private String identificacion;
     private String nombre;
     private String descripcion;
@@ -22,6 +23,7 @@ public class Cursos {
     private int calificacionMinima;
     private List<Grupos> grupos;
     
+    private static final long serialVersionUID = 1L;
      
     public Cursos(){};
     //Constructor
@@ -100,12 +102,14 @@ public class Cursos {
     public void setCalificacionMinima(int calificacionMinima) {
         this.calificacionMinima = calificacionMinima; 
     }
+    //Getter de los grupos
+    public List<Grupos> getGrupos() {
+    return grupos;
+    }
     //Validación de los datos.
     //Validación de la identificación.
     public String validarIdentificacion() {
-        if (identificacion == null || identificacion.trim().isEmpty()) {
-            return "Por favor digite la identificación del curso";
-        }
+        
         if (identificacion.length() != 6) {
             return "La identificación debe tener exactamente 6 caracteres";
         }
@@ -113,9 +117,6 @@ public class Cursos {
     }
     //Validación del nombre.
     public String validarNombre() {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            return "Por favor digite el nombre del curso";
-        }
         if (nombre.length() < 5 || nombre.length() > 40) {
             return "El nombre debe tener entre 5 y 40 caracteres";
         }
@@ -123,9 +124,6 @@ public class Cursos {
     }
     //Validación de la descripción
     public String validarDescripcion() {
-        if (descripcion == null || descripcion.trim().isEmpty()) {
-            return "Por favor digite la descripción";
-        }
         if (descripcion.length() < 5 || descripcion.length() > 400) {
             return "La descripción debe tener entre 5 y 400 caracteres";
         }
@@ -138,13 +136,7 @@ public class Cursos {
         }
         return null;
     }
-    //Validación de la modalidad
-    public String validarModalidad() {
-        if (modalidad == null || modalidad.trim().isEmpty()) {
-            return "La modalidad es requerida";
-        }
-        return null;
-    }
+
     //Validación del minimo de Estudiantes
     public String validarMinEstudiantes() {
         if (minEstu < 1 || minEstu > 5) {
@@ -163,14 +155,7 @@ public class Cursos {
         }
         return null;
     }
-    //Validación del tipo de curso(si selecciono algo)
-    public String validarTipoCurso() {
-        if (tipo == null || tipo.trim().isEmpty()) {
-            return "El tipo de curso es requerido";
-        }
-        
-        return null;
-    }
+    
     //Validación de la calificación minima.
     public String validarCalificacionMinima() {
         if (calificacionMinima < 0 || calificacionMinima > 100) {
@@ -187,10 +172,8 @@ public class Cursos {
         agregarError(errores, validarNombre());
         agregarError(errores, validarDescripcion());
         agregarError(errores, validarHorasPorDia());
-        agregarError(errores, validarModalidad());
         agregarError(errores, validarMinEstudiantes());
         agregarError(errores, validarMaxEstudiantes());
-        agregarError(errores, validarTipoCurso());
         agregarError(errores, validarCalificacionMinima());
         
         return errores;
