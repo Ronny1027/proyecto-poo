@@ -3215,6 +3215,175 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaInfo.setVisible(true);
     }
 
+    private void mostrarVentanaMatricular(Estudiantes estudiante) {
+        // Crear ventana para matricular curso
+        JFrame ventanaMatricula = new JFrame("Matricular Curso");
+        ventanaMatricula.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaMatricula.setSize(500, 400);
+        ventanaMatricula.setLocationRelativeTo(null);
+
+        // Panel principal
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Matricular Curso");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Verificar si hay cursos disponibles
+        if (cursos == null || cursos.isEmpty()) {
+            JLabel labelNoCursos = new JLabel("No hay cursos disponibles");
+            labelNoCursos.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoCursos);
+            panelPrincipal.add(Box.createVerticalStrut(20));
+
+            JButton btnCerrar = new JButton("Cerrar");
+            btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+            btnCerrar.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    ventanaMatricula.dispose();
+                }
+            });
+            panelPrincipal.add(btnCerrar);
+
+            ventanaMatricula.add(panelPrincipal);
+            ventanaMatricula.setVisible(true);
+            return;
+        }
+
+        // Label y ComboBox para seleccionar curso
+        JLabel labelCurso = new JLabel("Seleccione un curso:");
+        labelCurso.setFont(new Font("Arial", Font.BOLD, 14));
+        labelCurso.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelCurso);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboCursos = new JComboBox<>();
+        comboCursos.setMaximumSize(new Dimension(400, 25));
+        comboCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Llenar combo con cursos
+        for (Cursos curso : cursos) {
+            comboCursos.addItem(curso.getIdentificacion() + " - " + curso.getNombre());
+        }
+        panelPrincipal.add(comboCursos);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Label y ComboBox para seleccionar grupo
+        JLabel labelGrupo = new JLabel("Seleccione un grupo:");
+        labelGrupo.setFont(new Font("Arial", Font.BOLD, 14));
+        labelGrupo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelGrupo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboGrupos = new JComboBox<>();
+        comboGrupos.setMaximumSize(new Dimension(400, 25));
+        comboGrupos.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(comboGrupos);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Actualizar grupos cuando se seleccione un curso
+        comboCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = comboCursos.getSelectedIndex();
+                if (selectedIndex >= 0) {
+                    Cursos cursoSeleccionado = cursos.get(selectedIndex);
+                    comboGrupos.removeAllItems();
+
+                    if (cursoSeleccionado.getGrupos() != null && !cursoSeleccionado.getGrupos().isEmpty()) {
+                        for (Grupos grupo : cursoSeleccionado.getGrupos()) {
+                            comboGrupos.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                        }
+                    } else {
+                        comboGrupos.addItem("No hay grupos disponibles");
+                    }
+                }
+            }
+        });
+
+        // Inicializar grupos del primer curso
+        if (!cursos.isEmpty()) {
+            Cursos primerCurso = cursos.get(0);
+            if (primerCurso.getGrupos() != null && !primerCurso.getGrupos().isEmpty()) {
+                for (Grupos grupo : primerCurso.getGrupos()) {
+                    comboGrupos.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                }
+            } else {
+                comboGrupos.addItem("No hay grupos disponibles");
+            }
+        }
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnMatricular = new JButton("Matricular");
+        btnMatricular.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int cursoIndex = comboCursos.getSelectedIndex();
+                int grupoIndex = comboGrupos.getSelectedIndex();
+
+                if (cursoIndex < 0 || grupoIndex < 0) {
+                    JOptionPane.showMessageDialog(ventanaMatricula,
+                        "Por favor seleccione un curso y un grupo",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Cursos cursoSeleccionado = cursos.get(cursoIndex);
+
+                if (cursoSeleccionado.getGrupos() == null || cursoSeleccionado.getGrupos().isEmpty()) {
+                    JOptionPane.showMessageDialog(ventanaMatricula,
+                        "El curso seleccionado no tiene grupos disponibles",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Grupos grupoSeleccionado = cursoSeleccionado.getGrupos().get(grupoIndex);
+
+                // Llamar al método matricularCurso del estudiante
+                String resultado = estudiante.matricularCurso(cursoSeleccionado, grupoSeleccionado);
+
+                if (resultado.equals("Matriculado satisfactoriamente.")) {
+                    // Guardar cambios
+                    guardarEstudiantesEnArchivo();
+                    guardarCursosEnArchivo();
+
+                    JOptionPane.showMessageDialog(ventanaMatricula,
+                        resultado,
+                        "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    ventanaMatricula.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(ventanaMatricula,
+                        resultado,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaMatricula.dispose();
+            }
+        });
+
+        panelBotones.add(btnMatricular);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones);
+
+        ventanaMatricula.add(panelPrincipal);
+        ventanaMatricula.setVisible(true);
+    }
+
     private void mostrarLoginEstudiantes() {
         // Cerrar ventana actual
         this.dispose();
@@ -3494,9 +3663,17 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
+        JButton btnMatricularCurso = new JButton("Matricular Curso");
+        btnMatricularCurso.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarVentanaMatricular(estudiante);
+            }
+        });
+
         JPanel panelBoton = new JPanel();
         panelBoton.add(btnVolver1);
         panelBoton.add(btnInfoGeneral);
+        panelBoton.add(btnMatricularCurso);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
 
         ventanaEstudiantes.setVisible(true);
