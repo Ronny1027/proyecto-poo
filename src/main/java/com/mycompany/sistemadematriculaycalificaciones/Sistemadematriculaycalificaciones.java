@@ -74,13 +74,13 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         
         btnProfesores.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                abrirVentanaProfesores();
+                mostrarLoginProfesores();
             }
         });
-        
+
         btnEstudiantes.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                abrirVentanaEstudiantes();
+                mostrarLoginEstudiantes();
             }
         });
         
@@ -142,6 +142,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     //Manejo de archivos
     //Estudiantes
     private java.util.List<Estudiantes> estudiantes = new java.util.ArrayList<>();
+    private Estudiantes estudianteAutenticado; // Usuario estudiante autenticado
     private static final String ARCHIVO_ESTUDIANTES = "estudiantes.dat";
     //Función para guardar la info en un archivo.
     private void guardarEstudiantesEnArchivo() {
@@ -170,6 +171,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     }
     //Profesores
     private java.util.List<Profesores> profesores = new java.util.ArrayList<>();
+    private Profesores profesorAutenticado; // Usuario profesor autenticado
     private static final String ARCHIVO_PROFESORES = "profesores.dat";
     //Función para guardar la info en un archivo.
     private void guardarProfesoresEnArchivo() {
@@ -2845,7 +2847,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         txtObjeti.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         //Duración de la evaluación.
-        JLabel label5 = new JLabel("Duración de la evaluación");
+        JLabel label5 = new JLabel("Duración de la evaluación (minutos)");
         label5.setFont(new Font("Arial", Font.BOLD, 14));
         label5.setAlignmentX(Component.CENTER_ALIGNMENT); // Para alinear a la izquierda
        
@@ -2956,8 +2958,8 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         btnRegresar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnRegresar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                ventanaEvaluaciones.dispose(); 
-                abrirVentanaProfesores(); 
+                ventanaEvaluaciones.dispose();
+                abrirVentanaProfesores(profesorAutenticado);
             }
         });
 
@@ -3018,7 +3020,404 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelCentral.add(btnRegresar);
         ventanaEvaluaciones.setVisible(true);
     }
-    private void abrirVentanaProfesores() {
+
+    private void mostrarInfoEstudiante(Estudiantes estudiante) {
+        // Crear ventana para mostrar información
+        JFrame ventanaInfo = new JFrame("Información del Estudiante");
+        ventanaInfo.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaInfo.setSize(600, 700);
+        ventanaInfo.setLocationRelativeTo(null);
+
+        // Panel principal con scroll
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Información General del Estudiante");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(25));
+
+        // Formato de información
+        String[] labels = {
+            "Nombre:",
+            "Primer Apellido:",
+            "Segundo Apellido:",
+            "Identificación:",
+            "Teléfono:",
+            "Correo:",
+            "Dirección:",
+            "Organización:",
+            "Temas de Interés:",
+            "Fecha de Registro:"
+        };
+
+        String[] valores = {
+            estudiante.getNombre(),
+            estudiante.getApellido1(),
+            estudiante.getApellido2(),
+            estudiante.getIdentificacion(),
+            estudiante.getTelefono(),
+            estudiante.getCorreo(),
+            estudiante.getDireccion(),
+            estudiante.getOrganizacion(),
+            estudiante.getTemasInteresComoTexto(),
+            new SimpleDateFormat("dd/MM/yyyy").format(estudiante.getFechaRegistro())
+        };
+
+        for (int i = 0; i < labels.length; i++) {
+            JLabel labelCampo = new JLabel(labels[i]);
+            labelCampo.setFont(new Font("Arial", Font.BOLD, 14));
+            labelCampo.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelCampo);
+
+            JLabel labelValor = new JLabel(valores[i]);
+            labelValor.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelValor.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelValor);
+            panelPrincipal.add(Box.createVerticalStrut(15));
+        }
+
+        // Botón cerrar
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaInfo.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        // Agregar scroll pane
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaInfo.add(scrollPane);
+        ventanaInfo.setVisible(true);
+    }
+
+    private void mostrarInfoProfesor(Profesores profesor) {
+        // Crear ventana para mostrar información
+        JFrame ventanaInfo = new JFrame("Información del Profesor");
+        ventanaInfo.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaInfo.setSize(600, 750);
+        ventanaInfo.setLocationRelativeTo(null);
+
+        // Panel principal con scroll
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Información General del Profesor");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(25));
+
+        // Información básica
+        String[] labels = {
+            "Nombre:",
+            "Primer Apellido:",
+            "Segundo Apellido:",
+            "Identificación:",
+            "Teléfono:",
+            "Correo:",
+            "Dirección:",
+            "Fecha de Registro:"
+        };
+
+        String[] valores = {
+            profesor.getNombre(),
+            profesor.getApellido1(),
+            profesor.getApellido2(),
+            profesor.getIdentificacion(),
+            profesor.getTelefono(),
+            profesor.getCorreo(),
+            profesor.getDireccion(),
+            new SimpleDateFormat("dd/MM/yyyy").format(profesor.getFechaRegistro())
+        };
+
+        for (int i = 0; i < labels.length; i++) {
+            JLabel labelCampo = new JLabel(labels[i]);
+            labelCampo.setFont(new Font("Arial", Font.BOLD, 14));
+            labelCampo.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelCampo);
+
+            JLabel labelValor = new JLabel(valores[i]);
+            labelValor.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelValor.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelValor);
+            panelPrincipal.add(Box.createVerticalStrut(15));
+        }
+
+        // Títulos obtenidos
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        JLabel labelTitulos = new JLabel("Títulos Obtenidos:");
+        labelTitulos.setFont(new Font("Arial", Font.BOLD, 14));
+        labelTitulos.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulos);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        if (profesor.getTitulosobtenidos() != null && !profesor.getTitulosobtenidos().isEmpty()) {
+            for (String titulo : profesor.getTitulosobtenidos()) {
+                JLabel labelTituloItem = new JLabel("• " + titulo);
+                labelTituloItem.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelTituloItem.setAlignmentX(Component.CENTER_ALIGNMENT);
+                panelPrincipal.add(labelTituloItem);
+                panelPrincipal.add(Box.createVerticalStrut(5));
+            }
+        } else {
+            JLabel labelSinTitulos = new JLabel("No hay títulos registrados");
+            labelSinTitulos.setFont(new Font("Arial", Font.ITALIC, 14));
+            labelSinTitulos.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelSinTitulos);
+        }
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Certificaciones
+        JLabel labelCertificaciones = new JLabel("Certificaciones:");
+        labelCertificaciones.setFont(new Font("Arial", Font.BOLD, 14));
+        labelCertificaciones.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelCertificaciones);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        if (profesor.getCertificaciones() != null && !profesor.getCertificaciones().isEmpty()) {
+            for (String certificacion : profesor.getCertificaciones()) {
+                JLabel labelCert = new JLabel("• " + certificacion);
+                labelCert.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelCert.setAlignmentX(Component.CENTER_ALIGNMENT);
+                panelPrincipal.add(labelCert);
+                panelPrincipal.add(Box.createVerticalStrut(5));
+            }
+        } else {
+            JLabel labelSinCert = new JLabel("No hay certificaciones registradas");
+            labelSinCert.setFont(new Font("Arial", Font.ITALIC, 14));
+            labelSinCert.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelSinCert);
+        }
+
+        // Botón cerrar
+        panelPrincipal.add(Box.createVerticalStrut(20));
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaInfo.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        // Agregar scroll pane
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaInfo.add(scrollPane);
+        ventanaInfo.setVisible(true);
+    }
+
+    private void mostrarLoginEstudiantes() {
+        // Cerrar ventana actual
+        this.dispose();
+
+        // Crear ventana de login
+        JFrame ventanaLogin = new JFrame("Login - Estudiantes");
+        ventanaLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        ventanaLogin.setSize(350, 250);
+        ventanaLogin.setLocationRelativeTo(null);
+
+        // Panel principal
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Titulo
+        JLabel labelTitulo = new JLabel("Inicio de Sesión - Estudiantes");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Campo de identificacion
+        JLabel labelIdent = new JLabel("Identificación:");
+        labelIdent.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelIdent);
+
+        JTextField txtIdentificacion = new JTextField(20);
+        txtIdentificacion.setMaximumSize(new Dimension(250, 25));
+        txtIdentificacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtIdentificacion);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Campo de contraseña
+        JLabel labelPass = new JLabel("Contraseña:");
+        labelPass.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelPass);
+
+        JPasswordField txtContrasena = new JPasswordField(20);
+        txtContrasena.setMaximumSize(new Dimension(250, 25));
+        txtContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtContrasena);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnIngresar = new JButton("Ingresar");
+        JButton btnVolver = new JButton("Volver");
+
+        // Action listener para el boton Ingresar
+        btnIngresar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String identificacion = txtIdentificacion.getText().trim();
+                String contrasena = new String(txtContrasena.getPassword());
+
+                if (identificacion.isEmpty() || contrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(ventanaLogin,
+                        "Por favor complete todos los campos",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Buscar estudiante y validar credenciales
+                estudianteAutenticado = null;
+                for (Estudiantes est : estudiantes) {
+                    if (est.ingresoSistema(identificacion, contrasena)) {
+                        estudianteAutenticado = est;
+                        break;
+                    }
+                }
+
+                if (estudianteAutenticado != null) {
+                    ventanaLogin.dispose();
+                    abrirVentanaEstudiantes(estudianteAutenticado);
+                } else {
+                    JOptionPane.showMessageDialog(ventanaLogin,
+                        "Identificación o contraseña incorrecta",
+                        "Error de autenticación",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // Action listener para el boton Volver
+        btnVolver.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaLogin.dispose();
+                new Sistemadematriculaycalificaciones().setVisible(true);
+            }
+        });
+
+        panelBotones.add(btnIngresar);
+        panelBotones.add(btnVolver);
+        panelPrincipal.add(panelBotones);
+
+        ventanaLogin.add(panelPrincipal);
+        ventanaLogin.setVisible(true);
+    }
+
+    private void mostrarLoginProfesores() {
+        // Cerrar ventana actual
+        this.dispose();
+
+        // Crear ventana de login
+        JFrame ventanaLogin = new JFrame("Login - Profesores");
+        ventanaLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        ventanaLogin.setSize(350, 250);
+        ventanaLogin.setLocationRelativeTo(null);
+
+        // Panel principal
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Titulo
+        JLabel labelTitulo = new JLabel("Inicio de Sesión - Profesores");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Campo de identificacion
+        JLabel labelIdent = new JLabel("Identificación:");
+        labelIdent.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelIdent);
+
+        JTextField txtIdentificacion = new JTextField(20);
+        txtIdentificacion.setMaximumSize(new Dimension(250, 25));
+        txtIdentificacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtIdentificacion);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Campo de contraseña
+        JLabel labelPass = new JLabel("Contraseña:");
+        labelPass.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelPass);
+
+        JPasswordField txtContrasena = new JPasswordField(20);
+        txtContrasena.setMaximumSize(new Dimension(250, 25));
+        txtContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtContrasena);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnIngresar = new JButton("Ingresar");
+        JButton btnVolver = new JButton("Volver");
+
+        // Action listener para el boton Ingresar
+        btnIngresar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String identificacion = txtIdentificacion.getText().trim();
+                String contrasena = new String(txtContrasena.getPassword());
+
+                if (identificacion.isEmpty() || contrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(ventanaLogin,
+                        "Por favor complete todos los campos",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Buscar profesor y validar credenciales
+                profesorAutenticado = null;
+                for (Profesores prof : profesores) {
+                    if (prof.ingresoSistema(identificacion, contrasena)) {
+                        profesorAutenticado = prof;
+                        break;
+                    }
+                }
+
+                if (profesorAutenticado != null) {
+                    ventanaLogin.dispose();
+                    abrirVentanaProfesores(profesorAutenticado);
+                } else {
+                    JOptionPane.showMessageDialog(ventanaLogin,
+                        "Identificación o contraseña incorrecta",
+                        "Error de autenticación",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // Action listener para el boton Volver
+        btnVolver.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaLogin.dispose();
+                new Sistemadematriculaycalificaciones().setVisible(true);
+            }
+        });
+
+        panelBotones.add(btnIngresar);
+        panelBotones.add(btnVolver);
+        panelPrincipal.add(panelBotones);
+
+        ventanaLogin.add(panelPrincipal);
+        ventanaLogin.setVisible(true);
+    }
+
+    private void abrirVentanaProfesores(Profesores profesor) {
         // Cerrar ventana actual
         this.dispose();
         cargarEvaluacionesDesdeArchivo();
@@ -3027,12 +3426,12 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaProfesores.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         ventanaProfesores.setSize(400, 300);
         ventanaProfesores.setLocationRelativeTo(null);
-        
+
         // Agregar label
         JLabel label = new JLabel("Menú de profesores", JLabel.CENTER);
         label.setFont(new Font("Arial", Font.BOLD, 14));
         ventanaProfesores.add(label, BorderLayout.NORTH);
-        
+
         JButton btnVolver1 = new JButton("Regresar");
         btnVolver1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -3041,10 +3440,10 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                 new Sistemadematriculaycalificaciones().setVisible(true);
             }
         });
-        JButton btnConsultarInfo = new JButton("Consultar info");
-        btnConsultarInfo.addActionListener(new ActionListener() {
+        JButton btnInfoGeneral = new JButton("Info General");
+        btnInfoGeneral.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(null, "Aqui va la funcion de consultar info");
+                mostrarInfoProfesor(profesor);
             }
         });
         JButton btnEvaluaciones = new JButton("Evaluaciones");
@@ -3058,27 +3457,27 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         // Panel para el botón
         JPanel panelBoton = new JPanel();
         panelBoton.add(btnVolver1);
-        panelBoton.add(btnConsultarInfo);
+        panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnEvaluaciones);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
         ventanaProfesores.setVisible(true);
         }
-    private void abrirVentanaEstudiantes() {
+    private void abrirVentanaEstudiantes(Estudiantes estudiante) {
         // Cerrar ventana actual
         this.dispose();
-        
+
         // Crear nueva ventana
         JFrame ventanaEstudiantes = new JFrame("Ventana de Estudiantes");
         ventanaEstudiantes.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         ventanaEstudiantes.setSize(400, 300);
         ventanaEstudiantes.setLocationRelativeTo(null);
-        
+
         // Agregar label
         JLabel label = new JLabel("Menú de Estudiantes", JLabel.CENTER);
         label.setFont(new Font("Arial", Font.BOLD, 14));
         ventanaEstudiantes.add(label, BorderLayout.NORTH);
-        
+
         JButton btnVolver1 = new JButton("Regresar");
         btnVolver1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -3087,10 +3486,19 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                 new Sistemadematriculaycalificaciones().setVisible(true);
             }
         });
+
+        JButton btnInfoGeneral = new JButton("Info General");
+        btnInfoGeneral.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarInfoEstudiante(estudiante);
+            }
+        });
+
         JPanel panelBoton = new JPanel();
         panelBoton.add(btnVolver1);
+        panelBoton.add(btnInfoGeneral);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
-        
+
         ventanaEstudiantes.setVisible(true);
     }
     
