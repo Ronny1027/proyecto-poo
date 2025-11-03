@@ -29,6 +29,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         setSize(400, 300);
         setLocationRelativeTo(null);
         
+        
         //Se inician los archivos
         cargarEstudiantesDesdeArchivo();
         cargarProfesoresDesdeArchivo();
@@ -222,9 +223,10 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     //Evaluaciones
     private java.util.List<Evaluaciones> evaluaciones = new java.util.ArrayList<>();
     private static final String ARCHIVO_EVALUACIONES = "evaluaciones.dat";
+    
     private void guardarEvaluacionesEnArchivo() {
     try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES))) {
-        oos.writeObject(cursos);
+        oos.writeObject(evaluaciones);
     } catch (IOException e) {
     }
     }
@@ -244,6 +246,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         evaluaciones = new ArrayList<>();
     }
     }
+
     private void registrarEstudiante(JTextField txtNom, JTextField txtApel1, JTextField txtApel2,
                                 JTextField txtIdent, JTextField txtTelefono, JTextField txtCorreo,JTextField txtDirec,
                                 JTextField txtOrganizacion, JTextField txtTemasInteres, JPasswordField txtContraseña) {
@@ -1971,7 +1974,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         ventanaAdministradores.add(panelBoton, BorderLayout.CENTER);
         ventanaAdministradores.setVisible(true);
     }
-        //Funciones para generar la identificación aleatoria.
+    //Funciones para generar la identificación aleatoria.
     private String generarIdentificacionUnica() {
     Random random = new Random();
     String nuevaIdentificacion;
@@ -1985,7 +1988,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     return nuevaIdentificacion;
     }
-
+    
     private boolean existeIdentificacionEvaluacion(String identificacion) {
     for (Evaluaciones eval : evaluaciones) {
         if (eval.getIdentificacion() == Integer.parseInt(identificacion)) {
@@ -1994,8 +1997,803 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     }
     return false;
     }
+    //Metodo para agregar la pregunta a la lista y mostrarlo.
+    private void actualizarListaPreguntas(Evaluaciones evaluacionActual, JList<String> listaPreguntas) {
+    if (evaluacionActual == null) return;
+    
+    List<String> nombresPreguntas = new ArrayList<>();
+    List<Object> todasPreguntas = evaluacionActual.getTodasLasPreguntas();
+    
+    for (Object pregunta : todasPreguntas) {
+        String descripcion = "";
+        String tipo = pregunta.getClass().getSimpleName();
+        
+        if (pregunta instanceof SeleccionUnica) {
+            descripcion = ((SeleccionUnica) pregunta).getDescripcion();
+        } else if (pregunta instanceof SeleccionMultiple) {
+            descripcion = ((SeleccionMultiple) pregunta).getDescripcion();
+        } else if (pregunta instanceof FalsoVerdadero) {
+            descripcion = ((FalsoVerdadero) pregunta).getDescripcion();
+        } else if (pregunta instanceof Pareo) {
+            descripcion = ((Pareo) pregunta).getDescripcion();
+        } else if (pregunta instanceof Sopa) {
+            descripcion = ((Sopa) pregunta).getDescripcion();
+        }
+        
+        // Limitar longitud
+        if (descripcion.length() > 30) {
+            descripcion = descripcion.substring(0, 30) + "...";
+        }
+        
+        nombresPreguntas.add(tipo + " - " + descripcion);
+    }
+    listaPreguntas.setListData(nombresPreguntas.toArray(new String[0]));
+    }
+    
+    private SeleccionUnica ventanaSeleccionUnica(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar Selección Única", true);
+    dialog.setSize(500, 600);
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+    
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(3, 30);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(400, 80));
+    
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+    
+    // 3. OPCIONES
+    JLabel lblOpciones = new JLabel("Opciones (una por línea, mínimo 2):");
+    lblOpciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtOpciones = new JTextArea(5, 30);
+    txtOpciones.setLineWrap(true);
+    JScrollPane scrollOpciones = new JScrollPane(txtOpciones);
+    scrollOpciones.setMaximumSize(new Dimension(400, 120));
+    
+    // 4. RESPUESTA CORRECTA
+    JLabel lblRespuesta = new JLabel("Respuesta correcta (escriba solamente una opción):");
+    lblRespuesta.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtRespuesta = new JTextField();
+    txtRespuesta.setMaximumSize(new Dimension(400, 25));
+    
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+    
+    // Resultado
+    final SeleccionUnica[] preguntaCreada = {null};
+    
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+        
+        String[] opcionesArray = txtOpciones.getText().split("\n");
+        if (opcionesArray.length < 2) {
+            JOptionPane.showMessageDialog(dialog, "Debe haber al menos 2 opciones");
+            return;
+        }
+        
+        List<String> opciones = new ArrayList<>();
+        for (String opcion : opcionesArray) {
+            if (!opcion.trim().isEmpty()) {
+                opciones.add(opcion.trim());
+            }
+        }
+        
+        if (!opciones.contains(txtRespuesta.getText().trim())) {
+            JOptionPane.showMessageDialog(dialog, "La respuesta debe coincidir con una de las opciones");
+            return;
+        }
+        
+        // Crear pregunta
+        preguntaCreada[0] = new SeleccionUnica(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            opciones,
+            txtRespuesta.getText().trim()
+        );
+        if (preguntaCreada[0] != null) {
+        evalActual.agregarSeleccionUnica(preguntaCreada[0]);
+        actualizarListaPreguntas(evalActual, listaPreg);
+    }
+        dialog.dispose();
+    });
+    
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+    
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblOpciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollOpciones);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblRespuesta);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtRespuesta);
+    panel.add(Box.createVerticalStrut(20));
+    
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+    
+    dialog.add(panel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+    
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+    private SeleccionMultiple ventanaSeleccionMultiple(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar Selección Multiple", true);
+    dialog.setSize(500, 600);
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+    
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(3, 30);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(400, 80));
+    
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+    
+    // 3. OPCIONES
+    JLabel lblOpciones = new JLabel("Opciones (una por línea, mínimo 3):");
+    lblOpciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtOpciones = new JTextArea(5, 30);
+    txtOpciones.setLineWrap(true);
+    JScrollPane scrollOpciones = new JScrollPane(txtOpciones);
+    scrollOpciones.setMaximumSize(new Dimension(400, 120));
+    
+    JLabel lblRespuesta = new JLabel("Respuestas correctas (una por línea, mínimo 1):");
+    lblRespuesta.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtRespuestas = new JTextArea(5, 30); // ← MISMO TAMAÑO
+    txtRespuestas.setLineWrap(true);
+    JScrollPane scrollRespuestas = new JScrollPane(txtRespuestas); // ← JScrollPane también
+    scrollRespuestas.setMaximumSize(new Dimension(400, 120)); // ← MISMA ALTURA
+    
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+    
+    // Resultado
+    final SeleccionMultiple[] preguntaCreada = {null};
+    
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+        
+        String[] opcionesArray = txtOpciones.getText().split("\n");
+        if (opcionesArray.length < 3) {
+            JOptionPane.showMessageDialog(dialog, "Debe haber al menos 3 opciones");
+            return;
+        }
+        
+        List<String> opciones = new ArrayList<>();
+        for (String opcion : opcionesArray) {
+            if (!opcion.trim().isEmpty()) {
+                opciones.add(opcion.trim());
+            }
+        }
+        String[] respuestasArray = txtRespuestas.getText().split("\n");
+        if (respuestasArray.length < 1) {
+            JOptionPane.showMessageDialog(dialog, "Debe haber al menos 1 respuesta correcta");
+            return;
+        }
+        //Validar las respuestas correctas
+        List<String> respuestasCorrectas = new ArrayList<>();
+        for (String respuesta : respuestasArray) {
+            if (!respuesta.trim().isEmpty()) {
+                // Validar que cada respuesta coincida con una opción
+                if (!opciones.contains(respuesta.trim())) {
+                    JOptionPane.showMessageDialog(dialog, 
+                        "La respuesta '" + respuesta.trim() + "' no coincide con ninguna opción");
+                    return;
+                }
+                respuestasCorrectas.add(respuesta.trim());
+            }
+        }
+        if (respuestasCorrectas.size() >= opciones.size()) {
+            JOptionPane.showMessageDialog(dialog, 
+                "No pueden todas las opciones ser correctas");
+            return;
+        }
+        
+        // Crear pregunta
+        preguntaCreada[0] = new SeleccionMultiple(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            opciones,
+            respuestasCorrectas  // ← Lista de respuestas correctas
+        );
+        
+        if (preguntaCreada[0] != null) {
+            evalActual.agregarSeleccionMultiple(preguntaCreada[0]); // ← CAMBIADO A MÚLTIPLE
+            actualizarListaPreguntas(evalActual, listaPreg);
+        }
+        dialog.dispose();
+    
+    });
+    
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+    
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblOpciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollOpciones);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblRespuesta);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollRespuestas);
+    panel.add(Box.createVerticalStrut(20));
+    
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+    
+    dialog.add(panel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+    
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+    private FalsoVerdadero ventanaFalsoVerdadero(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar pregunta Verdadero/Falso", true);
+    dialog.setSize(450, 450); // Ventana más pequeña
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+    
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(3, 25);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(350, 80));
+    
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+    
+    // 3. OPCIONES FIJA (Verdadero/Falso)
+    JLabel lblOpciones = new JLabel("Opciones (automáticas):");
+    lblOpciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtOpciones = new JTextArea("Verdadero\nFalso", 2, 25);
+    txtOpciones.setLineWrap(true);
+    txtOpciones.setEditable(false); // No editable - opciones fijas
+    txtOpciones.setBackground(new Color(240, 240, 240)); // Fondo gris para indicar no editable
+    JScrollPane scrollOpciones = new JScrollPane(txtOpciones);
+    scrollOpciones.setMaximumSize(new Dimension(350, 60));
+    
+    // 4. RESPUESTA CORRECTA
+    JLabel lblRespuesta = new JLabel("Respuesta correcta (escriba: Verdadero o Falso):");
+    lblRespuesta.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtRespuesta = new JTextField(); // TextField normal para una respuesta
+    txtRespuesta.setMaximumSize(new Dimension(200, 25));
+    
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+    
+    // Resultado - CAMBIADO A FalsoVerdadero
+    final FalsoVerdadero[] preguntaCreada = {null};
+    
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+        
+        // Validar respuesta (solo "Verdadero" o "Falso")
+        String respuesta = txtRespuesta.getText().trim();
+        if (!respuesta.equalsIgnoreCase("Verdadero") && !respuesta.equalsIgnoreCase("Falso")) {
+            JOptionPane.showMessageDialog(dialog, 
+                "La respuesta debe ser 'Verdadero' o 'Falso'");
+            return;
+        }
+        
+        // Crear lista fija de opciones
+        List<String> opciones = new ArrayList<>();
+        opciones.add("Verdadero");
+        opciones.add("Falso");
+        
+        // Crear pregunta de Falso/Verdadero
+        preguntaCreada[0] = new FalsoVerdadero(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            opciones,
+            respuesta  // ← Solo una respuesta correcta
+        );
+        
+        if (preguntaCreada[0] != null) {
+            evalActual.agregarFalsoVerdadero(preguntaCreada[0]); // ← CAMBIADO A FalsoVerdadero
+            actualizarListaPreguntas(evalActual, listaPreg);
+        }
+        dialog.dispose();
+    });
+    
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+    
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblOpciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollOpciones);
+    panel.add(Box.createVerticalStrut(15));
+    
+    panel.add(lblRespuesta);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtRespuesta);
+    panel.add(Box.createVerticalStrut(20));
+    
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+    
+    dialog.add(panel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+    
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+    private void limpiarCamposEvaluacion(JTextField txtIdentEva, JTextField txtNomEva,
+                                   JTextField txtInstru, JTextField txtObjeti, 
+                                   JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
+                                   JComboBox<String> comboRespuestAlea, JList<String> listaPreg, 
+                                   Evaluaciones evaluacionActual) {
+    txtIdentEva.setText("");
+    txtNomEva.setText("");
+    txtInstru.setText("");
+    txtObjeti.setText("");
+    txtDuracion.setText("");
+    comboPreguntAlea.setSelectedIndex(0); 
+    comboRespuestAlea.setSelectedIndex(0); 
+    listaPreg.setListData(new String[0]);
+    evaluacionActual = new Evaluaciones(); 
+}
+
+    private void registrarEvaluacion(JTextField txtIdentEva,JTextField txtNomEva,
+            JTextField txtInstru, JTextField txtObjeti, JTextField txtDuracion, 
+            JComboBox<String> comboPreguntAle, JComboBox<String> comboRespuestAle,
+            JList<String> listaPreg, Evaluaciones evaluacionActual) {
+    //Se valida que la identificacion no sea repetida(por si acaso)
+    for (Evaluaciones evaluacion : evaluaciones) {
+        if (evaluacion.getIdentificacion() == Integer.parseInt(txtIdentEva.getText().trim())) {
+            JOptionPane.showMessageDialog(null, "Ya hay una evaluación registrada con esta identificación","Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+    }
+    //Se valida la lista
+    if (listaPreg.getModel().getSize() == 0) {
+    JOptionPane.showMessageDialog(null, "Debe agregar al menos una pregunta a la evaluación", "Error", JOptionPane.ERROR_MESSAGE);
+    return;
+    }
+    //Se validad que todos los campos esten con algo
+    if (txtIdentEva.getText().trim().isEmpty() ||
+        txtNomEva.getText().trim().isEmpty() ||
+        txtInstru.getText().trim().isEmpty() ||
+        txtObjeti.getText().trim().isEmpty() ||
+        txtDuracion.getText().trim().isEmpty()) {
+        
+        JOptionPane.showMessageDialog(null, "Todos los campos son obligatorios","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    // Se validan los campos que deben ser número antes de todo
+    if (!esNumero(txtDuracion.getText().trim())) {
+        JOptionPane.showMessageDialog(null, "La duración de la evaluacion debe ser un número valido","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    if (!esNumero(txtIdentEva.getText().trim())) {
+        JOptionPane.showMessageDialog(null, "La identificación debe ser un número válido","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    
+    // Obtener valores de los ComboBox
+    String preguntAle = (String) comboPreguntAle.getSelectedItem();
+    String respuestAle = (String) comboRespuestAle.getSelectedItem();
+    
+    //Se revisan estos valores
+    if (!"On".equals(preguntAle) && !"Off".equals(preguntAle)) {
+        JOptionPane.showMessageDialog(null, "Selección de preguntas aleatorias inválida","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    if (!"On".equals(respuestAle) && !"Off".equals(respuestAle)) {
+        JOptionPane.showMessageDialog(null, "Selección de respuestas aleatorias inválida","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    //Se pasan los valores que son String y deben ser Int
+    int identEva = Integer.parseInt(txtIdentEva.getText().trim());
+    int duracion = Integer.parseInt(txtDuracion.getText().trim());
+    
+    //Crear lista de objetivos
+    List<String> objetivos = new ArrayList<>();
+    String textoObjetivos = txtObjeti.getText().trim();
+
+    if (!textoObjetivos.isEmpty()) {
+        String[] objetivosArray = textoObjetivos.split(","); //Para separar por comas
+        for (String objetivo : objetivosArray) {
+            String objetivoTrim = objetivo.trim();
+            if (!objetivoTrim.isEmpty()) {
+                objetivos.add(objetivoTrim);
+            }
+        }
+    }
+
+    // Validar que haya al menos un objetivo
+    if (objetivos.isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Debe ingresar al menos un objetivo", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Crear nueva evaluacion
+    Evaluaciones nuevaEvaluacion = new Evaluaciones(
+        identEva,
+        txtNomEva.getText().trim(),
+        txtInstru.getText().trim(),
+        objetivos,
+        duracion,
+        preguntAle,
+        respuestAle,
+        evaluacionActual.getSeleccionesUnicas(), // ← Pasar las listas de preguntas
+        evaluacionActual.getSeleccionesMultiples(),
+        evaluacionActual.getFalsoVerdaderos(),
+        evaluacionActual.getPareos(),
+        evaluacionActual.getSopas()
+
+    );
+    
+    // Validar el curso
+    List<String> errores = nuevaEvaluacion.validarEvaluacionCompleta(evaluaciones);
+    if (!errores.isEmpty()) {
+        String mensajeError = "Errores de validación:\n• " + String.join("\n• ", errores);
+        JOptionPane.showMessageDialog(null, mensajeError, "Errores de validación", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    evaluaciones.add(nuevaEvaluacion);
+    
+    
+    guardarEvaluacionesEnArchivo();
+    
+    
+    
+
+    // Limpiar campos (necesitas crear esta función)
+    limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion,comboPreguntAle,
+            comboRespuestAle,listaPreg, evaluacionActual);
+    }
+    private void consultarEvaluacion(JTextField txtIdentEva, JTextField txtNomEva,
+                                JTextField txtInstru, JTextField txtObjeti, 
+                                JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
+                                JComboBox<String> comboRespuestAlea, JScrollPane scrollPreguntas) {
+    cargarEvaluacionesDesdeArchivo();
+    
+    
+    // Validar que la identificación no esté vacía
+    if (txtIdentEva.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Por favor ingrese una identificación para consultar", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    // Validar que la identificación no esté vacía
+    if (txtIdentEva.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Por favor ingrese una identificación para consultar", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Validar que sea número
+    if (!esNumero(txtIdentEva.getText().trim())) {
+        JOptionPane.showMessageDialog(null, "La identificación debe ser un número válido", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    int identBuscada = Integer.parseInt(txtIdentEva.getText().trim());
+    
+    // Buscar la evaluación
+    Evaluaciones evaluacionEncontrada = null;
+    for (Evaluaciones eval : evaluaciones) {
+        if (eval.getIdentificacion() == identBuscada) {
+            evaluacionEncontrada = eval;
+            break;
+        }
+    }
+    
+    if (evaluacionEncontrada == null) {
+        JOptionPane.showMessageDialog(null, "No se encontró una evaluación con la identificación: " + identBuscada, "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Llenar los campos con la información encontrada
+    txtNomEva.setText(evaluacionEncontrada.getNombre());
+    txtInstru.setText(evaluacionEncontrada.getInstrucGenerales());
+    
+    // Convertir lista de objetivos a texto separado por comas
+    String objetivosTexto = String.join(", ", evaluacionEncontrada.getObjEva());
+    txtObjeti.setText(objetivosTexto);
+    
+    txtDuracion.setText(String.valueOf(evaluacionEncontrada.getDuracion()));
+    comboPreguntAlea.setSelectedItem(evaluacionEncontrada.getPregunRandom());
+    comboRespuestAlea.setSelectedItem(evaluacionEncontrada.getRespueRandom());
+    
+    // Actualizar lista de preguntas
+    actualizarListaPreguntasConsulta(evaluacionEncontrada, scrollPreguntas);
+    
+    
+}
+
+private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPane scrollPreguntas) {
+    // Obtener el JList del JScrollPane
+    JList<String> listaPreguntas = (JList<String>) scrollPreguntas.getViewport().getView();
+    
+    List<String> nombresPreguntas = new ArrayList<>();
+    List<Object> todasPreguntas = evaluacion.getTodasLasPreguntas();
+    
+    for (Object pregunta : todasPreguntas) {
+        String descripcion = "";
+        String tipo = pregunta.getClass().getSimpleName();
+        
+        if (pregunta instanceof SeleccionUnica) {
+            descripcion = ((SeleccionUnica) pregunta).getDescripcion();
+        } else if (pregunta instanceof SeleccionMultiple) {
+            descripcion = ((SeleccionMultiple) pregunta).getDescripcion();
+        } else if (pregunta instanceof FalsoVerdadero) {
+            descripcion = ((FalsoVerdadero) pregunta).getDescripcion();
+        }
+        
+        if (descripcion.length() > 30) {
+            descripcion = descripcion.substring(0, 30) + "...";
+        }
+        
+        nombresPreguntas.add(tipo + " - " + descripcion);
+    }
+    listaPreguntas.setListData(nombresPreguntas.toArray(new String[0]));
+}   
+    private void eliminarEvaluacion(JTextField txtIdentEva, JTextField txtNomEva,
+                               JTextField txtInstru, JTextField txtObjeti, 
+                               JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
+                               JComboBox<String> comboRespuestAlea, JList<String> listaPreg,
+                               Evaluaciones evaluacionActual) {
+    
+    // Cargar evaluaciones actuales
+    cargarEvaluacionesDesdeArchivo();
+    
+    // Se valida que la identificación no este vacia.
+    if (txtIdentEva.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Por favor ingrese una identificación para eliminar", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Se valida que la identificación sea un número
+    if (!esNumero(txtIdentEva.getText().trim())) {
+        JOptionPane.showMessageDialog(null, "La identificación debe ser un número válido", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    int identBuscada = Integer.parseInt(txtIdentEva.getText().trim());
+    
+    // Se valida que la identificación si este
+    Evaluaciones evaluacionEncontrada = null;
+    for (Evaluaciones eval : evaluaciones) {
+        if (eval.getIdentificacion() == identBuscada) {
+            evaluacionEncontrada = eval;
+            break;
+        }
+    }
+    //Si la identificación no esta se devuelve error.
+    if (evaluacionEncontrada == null) {
+        JOptionPane.showMessageDialog(null, "No se encontró una evaluación con la identificación: " + identBuscada, "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Eliminar la evaluación
+    evaluaciones.remove(evaluacionEncontrada);
+    guardarEvaluacionesEnArchivo();
+    
+    limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
+                           comboPreguntAlea, comboRespuestAlea, listaPreg, evaluacionActual);
+    
+   
+    }
+    private void modificarEvaluacion(JTextField txtIdentEva, JTextField txtNomEva,
+                                JTextField txtInstru, JTextField txtObjeti, 
+                                JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
+                                JComboBox<String> comboRespuestAlea, JList<String> listaPreg,
+                                Evaluaciones evaluacionActual) {
+    
+    // Cargar evaluaciones actuales
+    cargarEvaluacionesDesdeArchivo();
+    
+    // Validar que la identificación no esté vacía
+    if (txtIdentEva.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Por favor ingrese una identificación para modificar", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Validar que sea número
+    if (!esNumero(txtIdentEva.getText().trim())) {
+        JOptionPane.showMessageDialog(null, "La identificación debe ser un número válido", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    int identBuscada = Integer.parseInt(txtIdentEva.getText().trim());
+    
+    // Buscar la evaluación
+    Evaluaciones evaluacionEncontrada = null;
+    int indiceEncontrado = -1;
+    for (int i = 0; i < evaluaciones.size(); i++) {
+        if (evaluaciones.get(i).getIdentificacion() == identBuscada) {
+            evaluacionEncontrada = evaluaciones.get(i);
+            indiceEncontrado = i;
+            break;
+        }
+    }
+    
+    if (evaluacionEncontrada == null) {
+        JOptionPane.showMessageDialog(null, "No se encontró una evaluación con la identificación: " + identBuscada, "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Validar campos vacíos
+    if (txtNomEva.getText().trim().isEmpty() ||
+        txtInstru.getText().trim().isEmpty() ||
+        txtObjeti.getText().trim().isEmpty() ||
+        txtDuracion.getText().trim().isEmpty()) {
+        
+        JOptionPane.showMessageDialog(null, "Todos los campos son obligatorios","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Validar números
+    if (!esNumero(txtDuracion.getText().trim())) {
+        JOptionPane.showMessageDialog(null, "La duración debe ser un número válido","Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Obtener valores
+    String preguntAle = (String) comboPreguntAlea.getSelectedItem();
+    String respuestAle = (String) comboRespuestAlea.getSelectedItem();
+    int duracion = Integer.parseInt(txtDuracion.getText().trim());
+    
+    // Crear lista de objetivos
+    List<String> objetivos = new ArrayList<>();
+    String[] objetivosArray = txtObjeti.getText().split(",");
+    for (String objetivo : objetivosArray) {
+        if (!objetivo.trim().isEmpty()) {
+            objetivos.add(objetivo.trim());
+        }
+    }
+    
+    // Crear evaluación actualizada
+    Evaluaciones evaluacionActualizada = new Evaluaciones(
+        identBuscada, // Mantener misma ID
+        txtNomEva.getText().trim(),
+        txtInstru.getText().trim(),
+        objetivos,
+        duracion,
+        preguntAle,
+        respuestAle,
+        evaluacionActual.getSeleccionesUnicas(),
+        evaluacionActual.getSeleccionesMultiples(),
+        evaluacionActual.getFalsoVerdaderos(),
+        evaluacionActual.getPareos(),
+        evaluacionActual.getSopas()
+    );
+    
+    // Validar la evaluación actualizada
+    List<String> errores = evaluacionActualizada.validarEvaluacionCompleta(evaluaciones);
+    if (!errores.isEmpty()) {
+        String mensajeError = "Errores de validación:\n• " + String.join("\n• ", errores);
+        JOptionPane.showMessageDialog(null, mensajeError, "Errores de validación", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    // Reemplazar la evaluación antigua con la actualizada
+    evaluaciones.set(indiceEncontrado, evaluacionActualizada);
+    guardarEvaluacionesEnArchivo();
+    limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
+                           comboPreguntAlea, comboRespuestAlea, listaPreg, evaluacionActual);
+    
+    JOptionPane.showMessageDialog(null, 
+        "Evaluación modificada exitosamente:\n" +
+        "ID: " + identBuscada + "\n" +
+        "Nombre: " + txtNomEva.getText().trim(),
+        "Éxito", 
+        JOptionPane.INFORMATION_MESSAGE);
+    }
     private void abriVentanaEvaluaciones(){
         this.dispose();
+        Evaluaciones evaluacionActual = new Evaluaciones();
+        JList<String> listaPreguntas = new JList<>();
+        
         // Crear nueva ventana
         JFrame ventanaEvaluaciones = new JFrame("Evaluaciones");
         ventanaEvaluaciones.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -2107,21 +2905,53 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         //Para generar una identificación con el sistema.
         String idUnica = generarIdentificacionUnica();
         txtIdentEva.setText(idUnica);
-        txtIdentEva.setEditable(false); 
+        
+        // Declarar scrollPreguntas antes de los ActionListeners
+        final JScrollPane scrollPreguntas = new JScrollPane(listaPreguntas);
+        scrollPreguntas.setPreferredSize(new Dimension(300, 150));
+        
         //Espacio de los botones
         // Botones para tipos de preguntas (en columna)
         JButton btnAgregarSeleccionUnica = new JButton("Selección Única");
+        btnAgregarSeleccionUnica.addActionListener(e -> {
+        ventanaSeleccionUnica(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
         JButton btnAgregarSeleccionMultiple = new JButton("Selección Múltiple");
+        btnAgregarSeleccionMultiple.addActionListener(e -> {
+        ventanaSeleccionMultiple(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
         JButton btnAgregarFalsoVerdadero = new JButton("Falso/Verdadero");
+        btnAgregarFalsoVerdadero.addActionListener(e -> {
+        ventanaFalsoVerdadero(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
         JButton btnAgregarPareo = new JButton("Pareo");
-
+        JButton btnAgregarSopa = new JButton("Sopa");
         // Botones de operaciones CRUD (en parejas)
-        JButton btnAgregar = new JButton("Agregar");
+        JButton btnRegistrar = new JButton("Registrar");
+        btnRegistrar.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            registrarEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
+                              comboPreguntAlea,comboRespuestAlea, listaPreguntas, evaluacionActual);
+        }});
         JButton btnModificar = new JButton("Modificar");
+        btnModificar.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            modificarEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
+                              comboPreguntAlea,comboRespuestAlea, listaPreguntas, evaluacionActual);
+        }});
         JButton btnEliminar = new JButton("Eliminar");
+        btnEliminar.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            eliminarEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
+                              comboPreguntAlea,comboRespuestAlea, listaPreguntas, evaluacionActual);
+        }});
         JButton btnConsultar = new JButton("Consultar");
-
-        // Botón regresar solo
+        btnConsultar.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            consultarEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
+                              comboPreguntAlea,comboRespuestAlea, scrollPreguntas);
+        }});
+        // Botón regresar 
         JButton btnRegresar = new JButton("Regresar");
         btnRegresar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnRegresar.addActionListener(new ActionListener() {
@@ -2136,16 +2966,15 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         btnAgregarSeleccionMultiple.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAgregarFalsoVerdadero.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAgregarPareo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnAgregar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnAgregarSopa.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnRegistrar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnModificar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnEliminar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnConsultar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnRegresar.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Lista para mostrar preguntas
-        JList<String> listaPreguntas = new JList<>();
-        JScrollPane scrollPreguntas = new JScrollPane(listaPreguntas);
-        scrollPreguntas.setPreferredSize(new Dimension(300, 150));
+        
+        
 
         // Agregar al panel central en el orden que pides
         panelCentral.add(Box.createVerticalStrut(10));
@@ -2158,6 +2987,8 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         panelCentral.add(btnAgregarFalsoVerdadero);
         panelCentral.add(Box.createVerticalStrut(5));
         panelCentral.add(btnAgregarPareo);
+        panelCentral.add(Box.createVerticalStrut(5));
+        panelCentral.add(btnAgregarSopa);
 
         panelCentral.add(Box.createVerticalStrut(15));
 
@@ -2169,7 +3000,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         // Botones CRUD en parejas
         JPanel panelCRUD1 = new JPanel();
         panelCRUD1.setLayout(new FlowLayout());
-        panelCRUD1.add(btnAgregar);
+        panelCRUD1.add(btnRegistrar);
         panelCRUD1.add(btnModificar);
 
         JPanel panelCRUD2 = new JPanel();
@@ -2190,7 +3021,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     private void abrirVentanaProfesores() {
         // Cerrar ventana actual
         this.dispose();
-        
+        cargarEvaluacionesDesdeArchivo();
         // Crear nueva ventana
         JFrame ventanaProfesores = new JFrame("Ventana de profesores");
         ventanaProfesores.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -2219,6 +3050,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         JButton btnEvaluaciones = new JButton("Evaluaciones");
         btnEvaluaciones.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                ventanaProfesores.dispose();
                 abriVentanaEvaluaciones();
             }
         });

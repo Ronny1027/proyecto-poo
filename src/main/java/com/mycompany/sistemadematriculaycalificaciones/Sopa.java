@@ -6,14 +6,16 @@ package com.mycompany.sistemadematriculaycalificaciones;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.io.Serializable;
 /**
  *
  * @author ronni
  */
-public class Sopa {
+public class Sopa implements Serializable  {
     public String descripcion;
     public int puntos;
+    
+    private static final long serialVersionUID = 1L;
     
     public Sopa(String descripcion, int puntos){
         this.descripcion = descripcion;

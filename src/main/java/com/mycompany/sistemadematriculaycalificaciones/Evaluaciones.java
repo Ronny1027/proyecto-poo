@@ -5,11 +5,12 @@
 package com.mycompany.sistemadematriculaycalificaciones;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
 /**
  *
  * @author ronni
  */
-public class Evaluaciones {
+public class Evaluaciones implements Serializable{
     public int identificacion;
     public String nombre;
     public String instrucGenerales;
@@ -17,20 +18,29 @@ public class Evaluaciones {
     public int duracion;
     public String pregunRandom;
     public String respueRandom;
-    public SeleccionUnica seleccionUni;
-    public SeleccionMultiple seleccionMulti;
-    public FalsoVerdadero falsoverdadero;
-    public Pareo pareo;
-    public Sopa sopa;
+    public List<SeleccionUnica> seleccionesUnicas;
+    public List<SeleccionMultiple> seleccionesMultiples;
+    public List<FalsoVerdadero> falsoVerdaderos;
+    public List<Pareo> pareos;
+    public List<Sopa> sopas;
             
     
+    private static final long serialVersionUID = 1L;
+
     
-    public Evaluaciones(){};
-    
+    //Constructor vacio que se necesita
+    public Evaluaciones() {
+    this.objEva = new ArrayList<>();
+    this.seleccionesUnicas = new ArrayList<>();
+    this.seleccionesMultiples = new ArrayList<>();
+    this.falsoVerdaderos = new ArrayList<>();
+    this.pareos = new ArrayList<>();
+    this.sopas = new ArrayList<>();
+    }
     public Evaluaciones(int identificacion, String nombre, String instrucGenerales,
                  List<String> objEva,int duracion, String pregunRandom, String respuesRandom, 
-                 SeleccionUnica seleccionUni, SeleccionMultiple seleccionMulti,
-                 FalsoVerdadero falsoverdadero, Pareo pareo, Sopa sopa){
+                 List<SeleccionUnica> seleccionUni, List<SeleccionMultiple> seleccionMulti,
+                 List<FalsoVerdadero> falsoVerdadero, List<Pareo> pareo, List<Sopa> sopa){
         this.identificacion = identificacion;
         this.nombre = nombre;
         this.instrucGenerales = instrucGenerales;
@@ -38,11 +48,11 @@ public class Evaluaciones {
         this.duracion = duracion;
         this.pregunRandom = pregunRandom;
         this.respueRandom = respuesRandom;
-        this.seleccionUni = seleccionUni;
-        this.seleccionMulti = seleccionMulti;
-        this.falsoverdadero = falsoverdadero;
-        this.pareo = pareo;
-        this.sopa = sopa;    
+        this.seleccionesUnicas = seleccionUni != null ? new ArrayList<>(seleccionUni) : new ArrayList<>();
+        this.seleccionesMultiples = seleccionMulti != null ? new ArrayList<>(seleccionMulti) : new ArrayList<>();
+        this.falsoVerdaderos = falsoVerdadero != null ? new ArrayList<>(falsoVerdadero) : new ArrayList<>();
+        this.pareos = pareo != null ? new ArrayList<>(pareo) : new ArrayList<>();
+        this.sopas = sopa != null ? new ArrayList<>(sopa) : new ArrayList<>();
     }
     //Getters y setters de los atributos
     // Identificación
@@ -108,55 +118,70 @@ public class Evaluaciones {
         this.respueRandom = respueRandom;
     }
 
-    // Selección única
-    public SeleccionUnica getSeleccionUni() {
-        return seleccionUni;
+    public void agregarSeleccionUnica(SeleccionUnica pregunta) {
+        if (pregunta != null) {
+            this.seleccionesUnicas.add(pregunta);
+        }
     }
-    public void setSeleccionUni(SeleccionUnica seleccionUni) {
-        this.seleccionUni = seleccionUni;
+    
+    public void agregarSeleccionMultiple(SeleccionMultiple pregunta) {
+        if (pregunta != null) {
+            this.seleccionesMultiples.add(pregunta);
+        }
+    }
+    
+    public void agregarFalsoVerdadero(FalsoVerdadero pregunta) {
+        if (pregunta != null) {
+            this.falsoVerdaderos.add(pregunta);
+        }
+    }
+    
+    public void agregarPareo(Pareo pregunta) {
+        if (pregunta != null) {
+            this.pareos.add(pregunta);
+        }
+    }
+    
+    public void agregarSopa(Sopa pregunta) {
+        if (pregunta != null) {
+            this.sopas.add(pregunta);
+        }
+    }
+    public List<SeleccionUnica> getSeleccionesUnicas() {
+    return seleccionesUnicas;
+}
+
+    public List<SeleccionMultiple> getSeleccionesMultiples() {
+        return seleccionesMultiples;
     }
 
-    // Selección múltiple
-    public SeleccionMultiple getSeleccionMulti() {
-        return seleccionMulti;
-    }
-    public void setSeleccionMulti(SeleccionMultiple seleccionMulti) {
-        this.seleccionMulti = seleccionMulti;
+    public List<FalsoVerdadero> getFalsoVerdaderos() {
+        return falsoVerdaderos;
     }
 
-    // Falso/Verdadero
-    public FalsoVerdadero getFalsoverdadero() {
-        return falsoverdadero;
-    }
-    public void setFalsoverdadero(FalsoVerdadero falsoverdadero) {
-        this.falsoverdadero = falsoverdadero;
+    public List<Pareo> getPareos() {
+        return pareos;
     }
 
-    // Pareo
-    public Pareo getPareo() {
-        return pareo;
+    public List<Sopa> getSopas() {
+        return sopas;
     }
-    public void setPareo(Pareo pareo) {
-        this.pareo = pareo;
+    // Método para obtener todas las preguntas (para mostrar en lista)
+    public List<Object> getTodasLasPreguntas() {
+        List<Object> todas = new ArrayList<>();
+        todas.addAll(seleccionesUnicas);
+        todas.addAll(seleccionesMultiples);
+        todas.addAll(falsoVerdaderos);
+        todas.addAll(pareos);
+        todas.addAll(sopas);
+        return todas;
     }
 
-    // Sopa de letras
-    public Sopa getSopa() {
-        return sopa;
-    }
-    public void setSopa(Sopa sopa) {
-        this.sopa = sopa;
-    }
     //Validaciones de los atributos
     // Validación de identificación 
     public String validarIdentificacion(List<Evaluaciones> todasEvaluaciones) {
         if (identificacion <= 0) {
             return "La identificación debe ser mayor a 0";
-        }
-        for (Evaluaciones eval : todasEvaluaciones) {
-            if (eval != this && eval.getIdentificacion() == this.identificacion) {
-                return "La identificación ya existe en el sistema";
-            }
         }
         return null;
     }
