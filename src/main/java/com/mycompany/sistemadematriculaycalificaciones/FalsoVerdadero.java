@@ -6,16 +6,20 @@ package com.mycompany.sistemadematriculaycalificaciones;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.io.Serializable;
 /**
  *
  * @author ronni
  */
-public class FalsoVerdadero {
+public class FalsoVerdadero implements Serializable {
     public String descripcion;
     public int puntos;
     public List<String> opciones;
     public String respuesta;
+    
+    
+    private static final long serialVersionUID = 1L;
+    
     
     public FalsoVerdadero(String descripcion, int puntos, List<String> opciones,
                  String respuesta){

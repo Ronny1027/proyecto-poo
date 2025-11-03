@@ -6,15 +6,21 @@ package com.mycompany.sistemadematriculaycalificaciones;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.io.Serializable;
 /**
  *
  * @author ronni
  */
-public class SeleccionMultiple {
+public class SeleccionMultiple implements Serializable {
     public String descripcion;
     public int puntos;
     public List<String> opciones;
     public List<String> respuestas;
+    
+    
+    
+    private static final long serialVersionUID = 1L;
+    
     
     public SeleccionMultiple(){};
     
