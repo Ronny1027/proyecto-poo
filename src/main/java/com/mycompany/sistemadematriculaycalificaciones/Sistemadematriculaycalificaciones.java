@@ -143,6 +143,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     //Estudiantes
     private java.util.List<Estudiantes> estudiantes = new java.util.ArrayList<>();
     private Estudiantes estudianteAutenticado; // Usuario estudiante autenticado
+    private String codigoVerificacionEstudiante; // Código de verificación para recuperación
     private static final String ARCHIVO_ESTUDIANTES = "estudiantes.dat";
     //Función para guardar la info en un archivo.
     private void guardarEstudiantesEnArchivo() {
@@ -172,6 +173,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     //Profesores
     private java.util.List<Profesores> profesores = new java.util.ArrayList<>();
     private Profesores profesorAutenticado; // Usuario profesor autenticado
+    private String codigoVerificacionProfesor; // Código de verificación para recuperación
     private static final String ARCHIVO_PROFESORES = "profesores.dat";
     //Función para guardar la info en un archivo.
     private void guardarProfesoresEnArchivo() {
@@ -3215,6 +3217,294 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaInfo.setVisible(true);
     }
 
+    private String generarCodigoVerificacion() {
+        Random random = new Random();
+        int codigo = 100000 + random.nextInt(900000); // Genera número entre 100000 y 999999
+        return String.valueOf(codigo);
+    }
+
+    private void recuperarContrasenaEstudiante() {
+        // Solicitar correo
+        String correo = JOptionPane.showInputDialog(null,
+            "Ingrese su correo electrónico:",
+            "Recuperar Contraseña",
+            JOptionPane.QUESTION_MESSAGE);
+
+        if (correo == null || correo.trim().isEmpty()) {
+            return;
+        }
+
+        // Buscar estudiante por correo
+        Estudiantes estudianteEncontrado = null;
+        for (Estudiantes est : estudiantes) {
+            if (est.getCorreo().equalsIgnoreCase(correo.trim())) {
+                estudianteEncontrado = est;
+                break;
+            }
+        }
+
+        if (estudianteEncontrado == null) {
+            JOptionPane.showMessageDialog(null,
+                "No se encontró ningún estudiante con ese correo",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Generar código
+        codigoVerificacionEstudiante = generarCodigoVerificacion();
+
+        // Enviar código por correo
+        try {
+            enviarCorreoConCodigo(estudianteEncontrado.getCorreo(),
+                estudianteEncontrado.getNombre(),
+                codigoVerificacionEstudiante);
+
+            JOptionPane.showMessageDialog(null,
+                "Se ha enviado un código de verificación a su correo",
+                "Código Enviado",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Solicitar código
+            String codigoIngresado = JOptionPane.showInputDialog(null,
+                "Ingrese el código de verificación que recibió por correo:",
+                "Verificación",
+                JOptionPane.QUESTION_MESSAGE);
+
+            if (codigoIngresado == null || !codigoIngresado.equals(codigoVerificacionEstudiante)) {
+                JOptionPane.showMessageDialog(null,
+                    "Código incorrecto",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Mostrar ventana para cambiar contraseña
+            mostrarVentanaCambiarContrasena(estudianteEncontrado, true);
+
+        } catch (MessagingException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al enviar el correo: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void recuperarContrasenaProfesor() {
+        // Solicitar correo
+        String correo = JOptionPane.showInputDialog(null,
+            "Ingrese su correo electrónico:",
+            "Recuperar Contraseña",
+            JOptionPane.QUESTION_MESSAGE);
+
+        if (correo == null || correo.trim().isEmpty()) {
+            return;
+        }
+
+        // Buscar profesor por correo
+        Profesores profesorEncontrado = null;
+        for (Profesores prof : profesores) {
+            if (prof.getCorreo().equalsIgnoreCase(correo.trim())) {
+                profesorEncontrado = prof;
+                break;
+            }
+        }
+
+        if (profesorEncontrado == null) {
+            JOptionPane.showMessageDialog(null,
+                "No se encontró ningún profesor con ese correo",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Generar código
+        codigoVerificacionProfesor = generarCodigoVerificacion();
+
+        // Enviar código por correo
+        try {
+            enviarCorreoConCodigo(profesorEncontrado.getCorreo(),
+                profesorEncontrado.getNombre(),
+                codigoVerificacionProfesor);
+
+            JOptionPane.showMessageDialog(null,
+                "Se ha enviado un código de verificación a su correo",
+                "Código Enviado",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Solicitar código
+            String codigoIngresado = JOptionPane.showInputDialog(null,
+                "Ingrese el código de verificación que recibió por correo:",
+                "Verificación",
+                JOptionPane.QUESTION_MESSAGE);
+
+            if (codigoIngresado == null || !codigoIngresado.equals(codigoVerificacionProfesor)) {
+                JOptionPane.showMessageDialog(null,
+                    "Código incorrecto",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Mostrar ventana para cambiar contraseña
+            mostrarVentanaCambiarContrasena(profesorEncontrado, false);
+
+        } catch (MessagingException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al enviar el correo: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void enviarCorreoConCodigo(String destinatario, String nombre, String codigo) throws MessagingException {
+        String host = "smtp.gmail.com";
+        String usuario = "ronniadmision@gmail.com";
+        String contraseña = "fmfe pkuy xzwj jkls";
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(usuario, contraseña);
+            }
+        });
+
+        Message message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(usuario));
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(destinatario));
+        message.setSubject("Código de Verificación - Recuperación de Contraseña");
+
+        String mensaje = "Estimado " + nombre + ",\n\n" +
+                        "Su código de verificación para recuperar su contraseña es: " + codigo + "\n\n" +
+                        "Este código es válido por esta sesión únicamente.\n\n" +
+                        "Si usted no solicitó este código, ignore este correo.\n\n" +
+                        "Saludos,\nSistema de Matrícula";
+
+        message.setText(mensaje);
+        Transport.send(message);
+    }
+
+    private void mostrarVentanaCambiarContrasena(Object usuario, boolean esEstudiante) {
+        JFrame ventanaCambio = new JFrame("Cambiar Contraseña");
+        ventanaCambio.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaCambio.setSize(400, 300);
+        ventanaCambio.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Cambiar Contraseña");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Nueva contraseña
+        JLabel labelNueva = new JLabel("Nueva Contraseña:");
+        labelNueva.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelNueva);
+
+        JPasswordField txtNuevaContrasena = new JPasswordField(20);
+        txtNuevaContrasena.setMaximumSize(new Dimension(250, 25));
+        txtNuevaContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtNuevaContrasena);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Confirmar contraseña
+        JLabel labelConfirmar = new JLabel("Confirmar Contraseña:");
+        labelConfirmar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelConfirmar);
+
+        JPasswordField txtConfirmarContrasena = new JPasswordField(20);
+        txtConfirmarContrasena.setMaximumSize(new Dimension(250, 25));
+        txtConfirmarContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtConfirmarContrasena);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnGuardar = new JButton("Guardar");
+        btnGuardar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String nuevaContrasena = new String(txtNuevaContrasena.getPassword());
+                String confirmarContrasena = new String(txtConfirmarContrasena.getPassword());
+
+                if (nuevaContrasena.isEmpty() || confirmarContrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(ventanaCambio,
+                        "Por favor complete todos los campos",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (!nuevaContrasena.equals(confirmarContrasena)) {
+                    JOptionPane.showMessageDialog(ventanaCambio,
+                        "Las contraseñas no coinciden",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validar contraseña
+                String errorValidacion = null;
+                if (nuevaContrasena.length() < 8) {
+                    errorValidacion = "La contraseña debe tener al menos 8 caracteres";
+                } else if (!nuevaContrasena.matches(".*\\d.*")) {
+                    errorValidacion = "La contraseña debe contener al menos un número";
+                } else if (!nuevaContrasena.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+                    errorValidacion = "La contraseña debe contener al menos un carácter especial";
+                }
+
+                if (errorValidacion != null) {
+                    JOptionPane.showMessageDialog(ventanaCambio,
+                        errorValidacion,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Cambiar contraseña
+                if (esEstudiante) {
+                    Estudiantes est = (Estudiantes) usuario;
+                    est.setContrasena(nuevaContrasena);
+                    guardarEstudiantesEnArchivo();
+                } else {
+                    Profesores prof = (Profesores) usuario;
+                    prof.setContrasena(nuevaContrasena);
+                    guardarProfesoresEnArchivo();
+                }
+
+                JOptionPane.showMessageDialog(ventanaCambio,
+                    "Contraseña cambiada exitosamente",
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+                ventanaCambio.dispose();
+            }
+        });
+
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaCambio.dispose();
+            }
+        });
+
+        panelBotones.add(btnGuardar);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones);
+
+        ventanaCambio.add(panelPrincipal);
+        ventanaCambio.setVisible(true);
+    }
+
     private void mostrarVentanaMatricular(Estudiantes estudiante) {
         // Crear ventana para matricular curso
         JFrame ventanaMatricula = new JFrame("Matricular Curso");
@@ -3391,7 +3681,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         // Crear ventana de login
         JFrame ventanaLogin = new JFrame("Login - Estudiantes");
         ventanaLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ventanaLogin.setSize(350, 250);
+        ventanaLogin.setSize(400, 300);
         ventanaLogin.setLocationRelativeTo(null);
 
         // Panel principal
@@ -3480,6 +3770,17 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelBotones.add(btnIngresar);
         panelBotones.add(btnVolver);
         panelPrincipal.add(panelBotones);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Botón cambiar contraseña
+        JButton btnCambiarContrasena = new JButton("Cambiar Contraseña");
+        btnCambiarContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCambiarContrasena.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                recuperarContrasenaEstudiante();
+            }
+        });
+        panelPrincipal.add(btnCambiarContrasena);
 
         ventanaLogin.add(panelPrincipal);
         ventanaLogin.setVisible(true);
@@ -3492,7 +3793,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         // Crear ventana de login
         JFrame ventanaLogin = new JFrame("Login - Profesores");
         ventanaLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ventanaLogin.setSize(350, 250);
+        ventanaLogin.setSize(400, 300);
         ventanaLogin.setLocationRelativeTo(null);
 
         // Panel principal
@@ -3581,6 +3882,17 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelBotones.add(btnIngresar);
         panelBotones.add(btnVolver);
         panelPrincipal.add(panelBotones);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Botón cambiar contraseña
+        JButton btnCambiarContrasena = new JButton("Cambiar Contraseña");
+        btnCambiarContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCambiarContrasena.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                recuperarContrasenaProfesor();
+            }
+        });
+        panelPrincipal.add(btnCambiarContrasena);
 
         ventanaLogin.add(panelPrincipal);
         ventanaLogin.setVisible(true);
