@@ -3898,6 +3898,108 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaLogin.setVisible(true);
     }
 
+    private void mostrarCursosProfesor(Profesores profesor) {
+        JFrame ventanaCursos = new JFrame("Mis Cursos Impartidos");
+        ventanaCursos.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaCursos.setSize(700, 500);
+        ventanaCursos.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Mis Cursos Impartidos");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener cursos usando el método de la clase Profesores
+        List<Grupos> cursosImpartidos = profesor.getCursosImpartidos();
+
+        // Verificar si tiene grupos asignados
+        if (cursosImpartidos == null || cursosImpartidos.isEmpty()) {
+            JLabel labelNoCursos = new JLabel("No tienes cursos asignados");
+            labelNoCursos.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoCursos);
+        } else {
+            // Mostrar cada curso que imparte
+            for (Grupos grupo : cursosImpartidos) {
+                Cursos curso = grupo.getCurso();
+
+                // Panel para cada curso
+                JPanel panelCurso = new JPanel();
+                panelCurso.setLayout(new BoxLayout(panelCurso, BoxLayout.Y_AXIS));
+                panelCurso.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelCurso.setMaximumSize(new Dimension(600, 220));
+                panelCurso.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre del curso
+                JLabel labelNombreCurso = new JLabel("Curso: " + curso.getNombre());
+                labelNombreCurso.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombreCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelNombreCurso);
+                panelCurso.add(Box.createVerticalStrut(5));
+
+                // Información del curso
+                JLabel labelId = new JLabel("ID: " + curso.getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelId);
+
+                JLabel labelGrupo = new JLabel("Grupo: " + grupo.getIdentificacionGrupo());
+                labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelGrupo);
+
+                JLabel labelModalidad = new JLabel("Modalidad: " + curso.getModalidad());
+                labelModalidad.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelModalidad.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelModalidad);
+
+                JLabel labelHoras = new JLabel("Horas por día: " + curso.getHorasPorDia());
+                labelHoras.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelHoras.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelHoras);
+
+                JLabel labelTipo = new JLabel("Tipo: " + curso.getTipo());
+                labelTipo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelTipo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelTipo);
+
+                // Cantidad de estudiantes en el grupo
+                int cantidadEstudiantes = grupo.getEstudiantes() != null ? grupo.getEstudiantes().size() : 0;
+                JLabel labelEstudiantes = new JLabel("Estudiantes matriculados: " + cantidadEstudiantes + "/" + curso.getMaxEstudiantes());
+                labelEstudiantes.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelEstudiantes.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelEstudiantes);
+
+                panelPrincipal.add(panelCurso);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaCursos.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaCursos.add(scrollPane);
+        ventanaCursos.setVisible(true);
+    }
+
     private void abrirVentanaProfesores(Profesores profesor) {
         // Cerrar ventana actual
         this.dispose();
@@ -3935,15 +4037,118 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
+        JButton btnVerMisCursos = new JButton("Ver Mis Cursos");
+        btnVerMisCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarCursosProfesor(profesor);
+            }
+        });
+
         // Panel para el botón
         JPanel panelBoton = new JPanel();
         panelBoton.add(btnVolver1);
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnEvaluaciones);
+        panelBoton.add(btnVerMisCursos);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
         ventanaProfesores.setVisible(true);
         }
+    private void mostrarCursosMatriculados(Estudiantes estudiante) {
+        JFrame ventanaCursos = new JFrame("Mis Cursos Matriculados");
+        ventanaCursos.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaCursos.setSize(700, 500);
+        ventanaCursos.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Mis Cursos Matriculados");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener cursos usando el método de la clase Estudiantes
+        List<Grupos> cursosMatriculados = estudiante.getCursosMatriculados();
+
+        // Verificar si tiene cursos matriculados
+        if (cursosMatriculados == null || cursosMatriculados.isEmpty()) {
+            JLabel labelNoCursos = new JLabel("No tienes cursos matriculados");
+            labelNoCursos.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoCursos);
+        } else {
+            // Mostrar cada curso matriculado
+            for (Grupos grupo : cursosMatriculados) {
+                Cursos curso = grupo.getCurso();
+
+                // Panel para cada curso
+                JPanel panelCurso = new JPanel();
+                panelCurso.setLayout(new BoxLayout(panelCurso, BoxLayout.Y_AXIS));
+                panelCurso.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelCurso.setMaximumSize(new Dimension(600, 200));
+                panelCurso.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre del curso
+                JLabel labelNombreCurso = new JLabel("Curso: " + curso.getNombre());
+                labelNombreCurso.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombreCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelNombreCurso);
+                panelCurso.add(Box.createVerticalStrut(5));
+
+                // Información del curso
+                JLabel labelId = new JLabel("ID: " + curso.getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelId);
+
+                JLabel labelGrupo = new JLabel("Grupo: " + grupo.getIdentificacionGrupo());
+                labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelGrupo);
+
+                JLabel labelModalidad = new JLabel("Modalidad: " + curso.getModalidad());
+                labelModalidad.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelModalidad.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelModalidad);
+
+                JLabel labelHoras = new JLabel("Horas por día: " + curso.getHorasPorDia());
+                labelHoras.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelHoras.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelHoras);
+
+                JLabel labelTipo = new JLabel("Tipo: " + curso.getTipo());
+                labelTipo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelTipo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelTipo);
+
+                panelPrincipal.add(panelCurso);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaCursos.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaCursos.add(scrollPane);
+        ventanaCursos.setVisible(true);
+    }
+
     private void abrirVentanaEstudiantes(Estudiantes estudiante) {
         // Cerrar ventana actual
         this.dispose();
@@ -3982,10 +4187,18 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
+        JButton btnVerMisCursos = new JButton("Ver Mis Cursos");
+        btnVerMisCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarCursosMatriculados(estudiante);
+            }
+        });
+
         JPanel panelBoton = new JPanel();
         panelBoton.add(btnVolver1);
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnMatricularCurso);
+        panelBoton.add(btnVerMisCursos);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
 
         ventanaEstudiantes.setVisible(true);

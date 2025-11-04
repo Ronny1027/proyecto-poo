@@ -377,5 +377,12 @@ public class Estudiantes implements Serializable {
         return gruposMatriculados.contains(grupo);
     }
 
+    // Método para obtener los cursos matriculados (con sus grupos)
+    public List<Grupos> getCursosMatriculados() {
+        if (gruposMatriculados == null) {
+            return new ArrayList<>();
+        }
+        return gruposMatriculados;
+    }
+
 }
-         

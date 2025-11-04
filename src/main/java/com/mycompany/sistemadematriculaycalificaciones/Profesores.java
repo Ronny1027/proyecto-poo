@@ -380,6 +380,14 @@ public String validarTodasLasCertificaciones() {
         }
         return false;
     }
-    
+
+    // Método para obtener los cursos impartidos (con sus grupos)
+    public List<Grupos> getCursosImpartidos() {
+        if (gruposImpartiendo == null) {
+            return new ArrayList<>();
+        }
+        return gruposImpartiendo;
+    }
+
 }
 
