@@ -18,6 +18,7 @@ public class VentanaRealizarEvaluacion extends JFrame {
     private EvaluacionAsignada evaluacionAsignada;
     private EvaluacionRealizada evaluacionRealizada;
     private Sistemadematriculaycalificaciones sistemaPrincipal;
+    private boolean modoPreview; // true = modo previsualización (profesor), false = modo realización (estudiante)
 
     // Timer y tiempo
     private javax.swing.Timer timer;
@@ -34,42 +35,69 @@ public class VentanaRealizarEvaluacion extends JFrame {
     private JButton btnAnterior, btnSiguiente, btnFinalizar;
     private JLabel labelNumeroPregunta;
 
-    // Constructor
+    // Constructor para estudiantes (modo realización)
     public VentanaRealizarEvaluacion(Estudiantes estudiante, EvaluacionAsignada asignacion,
                                      Sistemadematriculaycalificaciones sistema) {
+        this(estudiante, asignacion, sistema, false);
+    }
+
+    // Constructor para profesores (modo previsualización)
+    public VentanaRealizarEvaluacion(EvaluacionAsignada asignacion, Sistemadematriculaycalificaciones sistema) {
+        this(null, asignacion, sistema, true);
+    }
+
+    // Constructor privado completo
+    private VentanaRealizarEvaluacion(Estudiantes estudiante, EvaluacionAsignada asignacion,
+                                      Sistemadematriculaycalificaciones sistema, boolean preview) {
         this.estudiante = estudiante;
         this.evaluacionAsignada = asignacion;
         this.sistemaPrincipal = sistema;
+        this.modoPreview = preview;
         this.preguntaActual = 0;
         this.respuestasEstudiante = new HashMap<>();
 
-        // Crear evaluación realizada
-        this.evaluacionRealizada = new EvaluacionRealizada(estudiante, asignacion);
+        // Crear evaluación realizada solo si no es preview
+        if (!modoPreview && estudiante != null) {
+            this.evaluacionRealizada = new EvaluacionRealizada(estudiante, asignacion);
+        }
 
         // Configurar ventana
-        setTitle("Realizando Evaluación: " + asignacion.getEvaluacion().getNombre());
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        setSize(900, 700);
-        setLocationRelativeTo(null);
-
-        // Evitar que se cierre sin finalizar
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                int opcion = JOptionPane.showConfirmDialog(
-                    VentanaRealizarEvaluacion.this,
-                    "¿Está seguro que desea salir?\nSu progreso se perderá.",
-                    "Confirmar salida",
-                    JOptionPane.YES_NO_OPTION
-                );
-                if (opcion == JOptionPane.YES_OPTION) {
+        if (modoPreview) {
+            setTitle("PREVISUALIZACIÓN - Evaluación: " + asignacion.getEvaluacion().getNombre());
+            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            // En modo preview, permitir cerrar libremente
+            addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
                     if (timer != null) {
                         timer.stop();
                     }
-                    dispose();
                 }
-            }
-        });
+            });
+        } else {
+            setTitle("Realizando Evaluación: " + asignacion.getEvaluacion().getNombre());
+            setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+            // Evitar que se cierre sin finalizar
+            addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    int opcion = JOptionPane.showConfirmDialog(
+                        VentanaRealizarEvaluacion.this,
+                        "¿Está seguro que desea salir?\nSu progreso se perderá.",
+                        "Confirmar salida",
+                        JOptionPane.YES_NO_OPTION
+                    );
+                    if (opcion == JOptionPane.YES_OPTION) {
+                        if (timer != null) {
+                            timer.stop();
+                        }
+                        dispose();
+                    }
+                }
+            });
+        }
+        setSize(900, 700);
+        setLocationRelativeTo(null);
 
         // Generar lista de preguntas
         generarListaPreguntas();
@@ -103,8 +131,10 @@ public class VentanaRealizarEvaluacion extends JFrame {
             Collections.shuffle(todasLasPreguntas);
         }
 
-        // Guardar orden de preguntas
-        evaluacionRealizada.setOrdenPreguntas(new ArrayList<>(todasLasPreguntas));
+        // Guardar orden de preguntas solo si no es preview
+        if (!modoPreview && evaluacionRealizada != null) {
+            evaluacionRealizada.setOrdenPreguntas(new ArrayList<>(todasLasPreguntas));
+        }
     }
 
     private void crearInterfaz() {
@@ -561,25 +591,37 @@ public class VentanaRealizarEvaluacion extends JFrame {
         // Guardar última respuesta
         guardarRespuestaActual();
 
-        // Guardar respuestas en evaluación realizada
-        evaluacionRealizada.setRespuestas(respuestasEstudiante);
-        evaluacionRealizada.finalizar();
-
         // Calcular calificación
         double calificacionTotal = calcularCalificacion();
-        evaluacionRealizada.setCalificacionObtenida(calificacionTotal);
 
-        // Guardar en el sistema
-        sistemaPrincipal.agregarEvaluacionRealizada(evaluacionRealizada);
+        if (modoPreview) {
+            // En modo preview, solo mostrar resultado sin guardar
+            JOptionPane.showMessageDialog(
+                this,
+                "PREVISUALIZACIÓN FINALIZADA\n\n" +
+                "Calificación obtenida (ejemplo): " + String.format("%.2f", calificacionTotal) + " puntos\n\n" +
+                "Nota: Esta es una previsualización. No se guardó ningún resultado.",
+                "Previsualización Finalizada",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        } else {
+            // Modo normal: guardar resultados
+            evaluacionRealizada.setRespuestas(respuestasEstudiante);
+            evaluacionRealizada.finalizar();
+            evaluacionRealizada.setCalificacionObtenida(calificacionTotal);
 
-        // Mostrar resultado
-        JOptionPane.showMessageDialog(
-            this,
-            "Evaluación finalizada exitosamente.\n\n" +
-            "Calificación obtenida: " + String.format("%.2f", calificacionTotal) + " puntos",
-            "Evaluación Finalizada",
-            JOptionPane.INFORMATION_MESSAGE
-        );
+            // Guardar en el sistema
+            sistemaPrincipal.agregarEvaluacionRealizada(evaluacionRealizada);
+
+            // Mostrar resultado
+            JOptionPane.showMessageDialog(
+                this,
+                "Evaluación finalizada exitosamente.\n\n" +
+                "Calificación obtenida: " + String.format("%.2f", calificacionTotal) + " puntos",
+                "Evaluación Finalizada",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        }
 
         // Cerrar ventana
         dispose();

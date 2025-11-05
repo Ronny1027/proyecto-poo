@@ -4688,6 +4688,8 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
             panelPrincipal.add(labelNoEval);
         } else {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+
             for (EvaluacionAsignada asignacion : evaluacionesDelProfesor) {
                 JPanel panelEval = new JPanel();
                 panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
@@ -4695,7 +4697,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                     BorderFactory.createLineBorder(Color.GRAY, 1),
                     BorderFactory.createEmptyBorder(10, 15, 10, 15)
                 ));
-                panelEval.setMaximumSize(new Dimension(600, 150));
+                panelEval.setMaximumSize(new Dimension(600, 220));
                 panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
 
                 JLabel labelNombre = new JLabel("Evaluación: " + asignacion.getEvaluacion().getNombre());
@@ -4718,6 +4720,29 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                 labelId.setFont(new Font("Arial", Font.PLAIN, 14));
                 labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
                 panelEval.add(labelId);
+
+                // Fechas
+                String fechaInicioStr = asignacion.getFechaInicio() != null ? sdf.format(asignacion.getFechaInicio()) : "No definida";
+                String fechaFinStr = asignacion.getFechaFin() != null ? sdf.format(asignacion.getFechaFin()) : "No definida";
+
+                JLabel labelFechas = new JLabel("Disponible: " + fechaInicioStr + " - " + fechaFinStr);
+                labelFechas.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelFechas.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelFechas);
+
+                panelEval.add(Box.createVerticalStrut(10));
+
+                // Botón de previsualización
+                JButton btnPrevisualizar = new JButton("Previsualizar Evaluación");
+                btnPrevisualizar.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnPrevisualizar.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        VentanaRealizarEvaluacion ventanaPreview = new VentanaRealizarEvaluacion(
+                            asignacion, Sistemadematriculaycalificaciones.this);
+                        ventanaPreview.setVisible(true);
+                    }
+                });
+                panelEval.add(btnPrevisualizar);
 
                 panelPrincipal.add(panelEval);
                 panelPrincipal.add(Box.createVerticalStrut(15));
@@ -4798,7 +4823,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         });
 
         // Panel para los botones - usando GridLayout
-        JPanel panelBoton = new JPanel(new GridLayout(3, 2, 10, 10));
+        JPanel panelBoton = new JPanel(new GridLayout(4, 2, 10, 10));
         panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnEvaluaciones);
@@ -4810,6 +4835,86 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
         ventanaProfesores.setVisible(true);
         }
+
+    private void mostrarVentanaPrevisualizarEvaluacion() {
+        if (evaluaciones.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay evaluaciones disponibles para previsualizar", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JFrame ventanaPreview = new JFrame("Seleccionar Evaluación para Previsualizar");
+        ventanaPreview.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaPreview.setSize(600, 400);
+        ventanaPreview.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel labelTitulo = new JLabel("Seleccione una evaluación para previsualizar:");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelTitulo, BorderLayout.NORTH);
+
+        // Lista de evaluaciones
+        DefaultListModel<String> modeloLista = new DefaultListModel<>();
+        for (Evaluaciones eval : evaluaciones) {
+            modeloLista.addElement(eval.getIdentificacion() + " - " + eval.getNombre() +
+                " (" + eval.getDuracion() + " min)");
+        }
+
+        JList<String> listaEvaluaciones = new JList<>(modeloLista);
+        listaEvaluaciones.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(listaEvaluaciones);
+        panelPrincipal.add(scrollPane, BorderLayout.CENTER);
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnPrevisualizar = new JButton("Previsualizar");
+        JButton btnCancelar = new JButton("Cancelar");
+
+        btnPrevisualizar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int index = listaEvaluaciones.getSelectedIndex();
+                if (index == -1) {
+                    JOptionPane.showMessageDialog(ventanaPreview,
+                        "Debe seleccionar una evaluación", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                Evaluaciones evalSeleccionada = evaluaciones.get(index);
+
+                // Crear una evaluación asignada temporal para preview (sin grupo real)
+                Cursos cursoTemporal = new Cursos();
+                cursoTemporal.setNombre("PREVISUALIZACIÓN");
+                cursoTemporal.setIdentificacion("PREVIEW");
+                Date ahora = new Date();
+                Date unDiaDepues = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
+                Grupos grupoTemporal = new Grupos(0, ahora, unDiaDepues, cursoTemporal);
+
+                EvaluacionAsignada asignacionTemporal = new EvaluacionAsignada(
+                    evalSeleccionada, grupoTemporal, ahora, unDiaDepues);
+
+                // Abrir ventana de previsualización
+                ventanaPreview.dispose();
+                VentanaRealizarEvaluacion ventanaRealizacion = new VentanaRealizarEvaluacion(
+                    asignacionTemporal, Sistemadematriculaycalificaciones.this);
+                ventanaRealizacion.setVisible(true);
+            }
+        });
+
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaPreview.dispose();
+            }
+        });
+
+        panelBotones.add(btnPrevisualizar);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones, BorderLayout.SOUTH);
+
+        ventanaPreview.add(panelPrincipal);
+        ventanaPreview.setVisible(true);
+    }
+
     private void mostrarCursosMatriculados(Estudiantes estudiante) {
         JFrame ventanaCursos = new JFrame("Mis Cursos Matriculados");
         ventanaCursos.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
