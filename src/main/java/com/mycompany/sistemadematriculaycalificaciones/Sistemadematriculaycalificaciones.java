@@ -4607,8 +4607,8 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
                 if (grupoSeleccionado != null) {
                     // Solicitar fecha y hora de inicio y fin
-                    String fechaInicioStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de inicio (formato: yyyy-MM-dd HH:mm):\nEjemplo: 2025-11-10 08:00");
-                    String fechaFinStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de fin (formato: yyyy-MM-dd HH:mm):\nEjemplo: 2025-11-10 10:00");
+                    String fechaInicioStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de inicio (formato: dd/MM/yyyy HH:mm):\nEjemplo: 4/11/2025 08:00");
+                    String fechaFinStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de fin (formato: dd/MM/yyyy HH:mm):\nEjemplo: 5/11/2025 10:00");
 
                     if (fechaInicioStr == null || fechaFinStr == null || fechaInicioStr.trim().isEmpty() || fechaFinStr.trim().isEmpty()) {
                         JOptionPane.showMessageDialog(ventanaAsignar, "Debe ingresar ambas fechas", "Error", JOptionPane.ERROR_MESSAGE);
@@ -4616,7 +4616,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                     }
 
                     try {
-                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
                         Date fechaInicio = sdf.parse(fechaInicioStr);
                         Date fechaFin = sdf.parse(fechaFinStr);
 
@@ -4633,7 +4633,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                         JOptionPane.showMessageDialog(ventanaAsignar, "Evaluación asignada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                         ventanaAsignar.dispose();
                     } catch (java.text.ParseException ex) {
-                        JOptionPane.showMessageDialog(ventanaAsignar, "Formato de fecha inválido. Use: yyyy-MM-dd HH:mm", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Formato de fecha inválido. Use: dd/MM/yyyy HH:mm", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -4697,7 +4697,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
             panelPrincipal.add(labelNoEval);
         } else {
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
 
             for (EvaluacionAsignada asignacion : evaluacionesDelProfesor) {
                 JPanel panelEval = new JPanel();
@@ -5105,7 +5105,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
             panelPrincipal.add(labelNoEval);
         } else {
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
 
             for (EvaluacionAsignada asignacion : evaluacionesDelEstudiante) {
                 Evaluaciones eval = asignacion.getEvaluacion();
