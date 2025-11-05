@@ -34,6 +34,8 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         cargarEstudiantesDesdeArchivo();
         cargarProfesoresDesdeArchivo();
         cargarCursosDesdeArchivo();
+        cargarEvaluacionesAsignadasDesdeArchivo();
+        cargarEvaluacionesRealizadasDesdeArchivo();
         // Crear componentes
         crearInterfaz();
     }
@@ -249,6 +251,68 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     } catch (IOException | ClassNotFoundException e) {
         evaluaciones = new ArrayList<>();
     }
+    }
+
+    //Evaluaciones Asignadas
+    private java.util.List<EvaluacionAsignada> evaluacionesAsignadas = new java.util.ArrayList<>();
+    private static final String ARCHIVO_EVALUACIONES_ASIGNADAS = "evaluacionesAsignadas.dat";
+
+    private void guardarEvaluacionesAsignadasEnArchivo() {
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES_ASIGNADAS))) {
+        oos.writeObject(evaluacionesAsignadas);
+    } catch (IOException e) {
+    }
+    }
+
+    private void cargarEvaluacionesAsignadasDesdeArchivo() {
+    File archivo = new File(ARCHIVO_EVALUACIONES_ASIGNADAS);
+    if (!archivo.exists()) {
+        evaluacionesAsignadas = new ArrayList<>();
+        return;
+    }
+
+    try {
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES_ASIGNADAS));
+        evaluacionesAsignadas = (List<EvaluacionAsignada>) ois.readObject();
+        ois.close();
+    } catch (IOException | ClassNotFoundException e) {
+        evaluacionesAsignadas = new ArrayList<>();
+    }
+    }
+
+    //Evaluaciones Realizadas
+    private java.util.List<EvaluacionRealizada> evaluacionesRealizadas = new java.util.ArrayList<>();
+    private static final String ARCHIVO_EVALUACIONES_REALIZADAS = "evaluacionesRealizadas.dat";
+
+    private void guardarEvaluacionesRealizadasEnArchivo() {
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES_REALIZADAS))) {
+        oos.writeObject(evaluacionesRealizadas);
+    } catch (IOException e) {
+    }
+    }
+
+    private void cargarEvaluacionesRealizadasDesdeArchivo() {
+    File archivo = new File(ARCHIVO_EVALUACIONES_REALIZADAS);
+    if (!archivo.exists()) {
+        evaluacionesRealizadas = new ArrayList<>();
+        return;
+    }
+
+    try {
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES_REALIZADAS));
+        evaluacionesRealizadas = (List<EvaluacionRealizada>) ois.readObject();
+        ois.close();
+    } catch (IOException | ClassNotFoundException e) {
+        evaluacionesRealizadas = new ArrayList<>();
+    }
+    }
+
+    // Método público para agregar evaluación realizada y guardar
+    public void agregarEvaluacionRealizada(EvaluacionRealizada evaluacionRealizada) {
+        if (evaluacionRealizada != null) {
+            evaluacionesRealizadas.add(evaluacionRealizada);
+            guardarEvaluacionesRealizadasEnArchivo();
+        }
     }
 
     private void registrarEstudiante(JTextField txtNom, JTextField txtApel1, JTextField txtApel2,
@@ -4412,6 +4476,269 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaCursos.setVisible(true);
     }
 
+    // Método para asignar evaluación a un grupo
+    private void mostrarVentanaAsignarEvaluacion(Profesores profesor) {
+        JFrame ventanaAsignar = new JFrame("Asignar Evaluación a Grupo");
+        ventanaAsignar.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaAsignar.setSize(500, 400);
+        ventanaAsignar.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Asignar Evaluación a Grupo");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Cargar evaluaciones
+        cargarEvaluacionesDesdeArchivo();
+
+        // ComboBox de Evaluaciones
+        JLabel labelEvaluacion = new JLabel("Seleccione una evaluación:");
+        labelEvaluacion.setFont(new Font("Arial", Font.BOLD, 14));
+        labelEvaluacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(labelEvaluacion);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboEvaluaciones = new JComboBox<>();
+        comboEvaluaciones.setMaximumSize(new Dimension(400, 25));
+        comboEvaluaciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        for (Evaluaciones eval : evaluaciones) {
+            comboEvaluaciones.addItem(eval.getIdentificacion() + " - " + eval.getNombre());
+        }
+        panelPrincipal.add(comboEvaluaciones);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // ComboBox de Cursos
+        JLabel labelCurso = new JLabel("Seleccione un curso:");
+        labelCurso.setFont(new Font("Arial", Font.BOLD, 14));
+        labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(labelCurso);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboCursos = new JComboBox<>();
+        comboCursos.setMaximumSize(new Dimension(400, 25));
+        comboCursos.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Llenar con los cursos del profesor
+        List<Grupos> gruposProfesor = profesor.getCursosImpartidos();
+        List<Cursos> cursosProfesor = new ArrayList<>();
+        for (Grupos grupo : gruposProfesor) {
+            Cursos curso = grupo.getCurso();
+            if (!cursosProfesor.contains(curso)) {
+                cursosProfesor.add(curso);
+                comboCursos.addItem(curso.getIdentificacion() + " - " + curso.getNombre());
+            }
+        }
+        panelPrincipal.add(comboCursos);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // ComboBox de Grupos
+        JLabel labelGrupo = new JLabel("Seleccione un grupo:");
+        labelGrupo.setFont(new Font("Arial", Font.BOLD, 14));
+        labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(labelGrupo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboGrupos = new JComboBox<>();
+        comboGrupos.setMaximumSize(new Dimension(400, 25));
+        comboGrupos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(comboGrupos);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Actualizar grupos al seleccionar curso
+        comboCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = comboCursos.getSelectedIndex();
+                if (selectedIndex >= 0 && selectedIndex < cursosProfesor.size()) {
+                    Cursos cursoSeleccionado = cursosProfesor.get(selectedIndex);
+                    comboGrupos.removeAllItems();
+
+                    for (Grupos grupo : gruposProfesor) {
+                        if (grupo.getCurso().equals(cursoSeleccionado)) {
+                            comboGrupos.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                        }
+                    }
+                }
+            }
+        });
+
+        // Inicializar grupos del primer curso
+        if (!cursosProfesor.isEmpty()) {
+            Cursos primerCurso = cursosProfesor.get(0);
+            for (Grupos grupo : gruposProfesor) {
+                if (grupo.getCurso().equals(primerCurso)) {
+                    comboGrupos.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                }
+            }
+        }
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnAsignar = new JButton("Asignar");
+        btnAsignar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (comboEvaluaciones.getSelectedIndex() < 0 || comboCursos.getSelectedIndex() < 0 || comboGrupos.getSelectedIndex() < 0) {
+                    JOptionPane.showMessageDialog(ventanaAsignar, "Por favor seleccione todos los campos", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Evaluaciones evaluacionSeleccionada = evaluaciones.get(comboEvaluaciones.getSelectedIndex());
+                Cursos cursoSeleccionado = cursosProfesor.get(comboCursos.getSelectedIndex());
+
+                // Encontrar el grupo seleccionado
+                Grupos grupoSeleccionado = null;
+                int grupoIndex = 0;
+                for (Grupos grupo : gruposProfesor) {
+                    if (grupo.getCurso().equals(cursoSeleccionado)) {
+                        if (grupoIndex == comboGrupos.getSelectedIndex()) {
+                            grupoSeleccionado = grupo;
+                            break;
+                        }
+                        grupoIndex++;
+                    }
+                }
+
+                if (grupoSeleccionado != null) {
+                    // Solicitar fecha y hora de inicio y fin
+                    String fechaInicioStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de inicio (formato: yyyy-MM-dd HH:mm):\nEjemplo: 2025-11-10 08:00");
+                    String fechaFinStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de fin (formato: yyyy-MM-dd HH:mm):\nEjemplo: 2025-11-10 10:00");
+
+                    if (fechaInicioStr == null || fechaFinStr == null || fechaInicioStr.trim().isEmpty() || fechaFinStr.trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Debe ingresar ambas fechas", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    try {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+                        Date fechaInicio = sdf.parse(fechaInicioStr);
+                        Date fechaFin = sdf.parse(fechaFinStr);
+
+                        if (fechaFin.before(fechaInicio)) {
+                            JOptionPane.showMessageDialog(ventanaAsignar, "La fecha de fin debe ser posterior a la fecha de inicio", "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        // Crear evaluación asignada
+                        EvaluacionAsignada nuevaAsignacion = new EvaluacionAsignada(evaluacionSeleccionada, grupoSeleccionado, fechaInicio, fechaFin);
+                        evaluacionesAsignadas.add(nuevaAsignacion);
+                        guardarEvaluacionesAsignadasEnArchivo();
+
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Evaluación asignada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                        ventanaAsignar.dispose();
+                    } catch (java.text.ParseException ex) {
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Formato de fecha inválido. Use: yyyy-MM-dd HH:mm", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaAsignar.dispose();
+            }
+        });
+
+        panelBotones.add(btnAsignar);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones);
+
+        ventanaAsignar.add(panelPrincipal);
+        ventanaAsignar.setVisible(true);
+    }
+
+    // Método para ver evaluaciones asignadas
+    private void mostrarEvaluacionesAsignadas(Profesores profesor) {
+        JFrame ventanaEvaluaciones = new JFrame("Evaluaciones Asignadas");
+        ventanaEvaluaciones.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaEvaluaciones.setSize(700, 500);
+        ventanaEvaluaciones.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Evaluaciones Asignadas a Mis Grupos");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Filtrar evaluaciones asignadas a los grupos del profesor
+        List<Grupos> gruposProfesor = profesor.getCursosImpartidos();
+        List<EvaluacionAsignada> evaluacionesDelProfesor = new ArrayList<>();
+
+        for (EvaluacionAsignada asignacion : evaluacionesAsignadas) {
+            if (gruposProfesor.contains(asignacion.getGrupo())) {
+                evaluacionesDelProfesor.add(asignacion);
+            }
+        }
+
+        if (evaluacionesDelProfesor.isEmpty()) {
+            JLabel labelNoEval = new JLabel("No hay evaluaciones asignadas a tus grupos");
+            labelNoEval.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEval);
+        } else {
+            for (EvaluacionAsignada asignacion : evaluacionesDelProfesor) {
+                JPanel panelEval = new JPanel();
+                panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
+                panelEval.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelEval.setMaximumSize(new Dimension(600, 150));
+                panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel labelNombre = new JLabel("Evaluación: " + asignacion.getEvaluacion().getNombre());
+                labelNombre.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombre.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelNombre);
+                panelEval.add(Box.createVerticalStrut(5));
+
+                JLabel labelCurso = new JLabel("Curso: " + asignacion.getGrupo().getCurso().getNombre());
+                labelCurso.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelCurso);
+
+                JLabel labelGrupo = new JLabel("Grupo: " + asignacion.getGrupo().getIdentificacionGrupo());
+                labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelGrupo);
+
+                JLabel labelId = new JLabel("ID Evaluación: " + asignacion.getEvaluacion().getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelId);
+
+                panelPrincipal.add(panelEval);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaEvaluaciones.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaEvaluaciones.add(scrollPane);
+        ventanaEvaluaciones.setVisible(true);
+    }
+
     private void abrirVentanaProfesores(Profesores profesor) {
         // Cerrar ventana actual
         this.dispose();
@@ -4456,12 +4783,29 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
-        // Panel para el botón
-        JPanel panelBoton = new JPanel();
-        panelBoton.add(btnVolver1);
+        JButton btnAsignarEvaluaciones = new JButton("Asignar Evaluaciones");
+        btnAsignarEvaluaciones.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarVentanaAsignarEvaluacion(profesor);
+            }
+        });
+
+        JButton btnEvaluacionesAsignadas = new JButton("Evaluaciones Asignadas");
+        btnEvaluacionesAsignadas.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarEvaluacionesAsignadas(profesor);
+            }
+        });
+
+        // Panel para los botones - usando GridLayout
+        JPanel panelBoton = new JPanel(new GridLayout(3, 2, 10, 10));
+        panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnEvaluaciones);
         panelBoton.add(btnVerMisCursos);
+        panelBoton.add(btnAsignarEvaluaciones);
+        panelBoton.add(btnEvaluacionesAsignadas);
+        panelBoton.add(btnVolver1);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
         ventanaProfesores.setVisible(true);
@@ -4561,6 +4905,185 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaCursos.setVisible(true);
     }
 
+    // Método para que estudiantes vean evaluaciones asignadas a sus grupos
+    private void mostrarEvaluacionesEstudiante(Estudiantes estudiante) {
+        JFrame ventanaEvaluaciones = new JFrame("Mis Evaluaciones");
+        ventanaEvaluaciones.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaEvaluaciones.setSize(800, 600);
+        ventanaEvaluaciones.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Evaluaciones Asignadas");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener grupos del estudiante
+        List<Grupos> gruposEstudiante = estudiante.getCursosMatriculados();
+
+        // Filtrar evaluaciones asignadas a los grupos del estudiante
+        List<EvaluacionAsignada> evaluacionesDelEstudiante = new ArrayList<>();
+
+        for (EvaluacionAsignada asignacion : evaluacionesAsignadas) {
+            // Comparar grupos por identificación en lugar de usar contains
+            boolean grupoCoincide = false;
+            for (Grupos grupoEstudiante : gruposEstudiante) {
+                if (grupoEstudiante.getCurso().getIdentificacion().equals(asignacion.getGrupo().getCurso().getIdentificacion()) &&
+                    grupoEstudiante.getIdentificacionGrupo() == asignacion.getGrupo().getIdentificacionGrupo()) {
+                    grupoCoincide = true;
+                    break;
+                }
+            }
+            if (grupoCoincide) {
+                evaluacionesDelEstudiante.add(asignacion);
+            }
+        }
+
+        if (evaluacionesDelEstudiante.isEmpty()) {
+            JLabel labelNoEval = new JLabel("No tienes evaluaciones asignadas");
+            labelNoEval.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEval);
+        } else {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+            for (EvaluacionAsignada asignacion : evaluacionesDelEstudiante) {
+                Evaluaciones eval = asignacion.getEvaluacion();
+
+                // Verificar si ya realizó esta evaluación
+                boolean yaRealizada = false;
+                for (EvaluacionRealizada realizada : evaluacionesRealizadas) {
+                    if (realizada.getEstudiante().equals(estudiante) &&
+                        realizada.getEvaluacionAsignada().equals(asignacion) &&
+                        realizada.isFinalizada()) {
+                        yaRealizada = true;
+                        break;
+                    }
+                }
+
+                JPanel panelEval = new JPanel();
+                panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
+
+                // Color del borde según disponibilidad
+                Color colorBorde = Color.GRAY;
+                if (asignacion.estaDisponibleHoy() && !yaRealizada) {
+                    colorBorde = Color.GREEN;
+                } else if (yaRealizada) {
+                    colorBorde = Color.BLUE;
+                }
+
+                panelEval.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(colorBorde, 2),
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)
+                ));
+                panelEval.setMaximumSize(new Dimension(700, 320));
+                panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre de la evaluación
+                JLabel labelNombre = new JLabel("Evaluación: " + eval.getNombre() + " (ID: " + eval.getIdentificacion() + ")");
+                labelNombre.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombre.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelNombre);
+                panelEval.add(Box.createVerticalStrut(5));
+
+                // Curso y grupo
+                JLabel labelCurso = new JLabel("Curso/Grupo: " + asignacion.getGrupo().getCurso().getNombre() + " / Grupo " + asignacion.getGrupo().getIdentificacionGrupo());
+                labelCurso.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelCurso);
+
+                // Fechas de inicio y fin
+                String fechaInicioStr = asignacion.getFechaInicio() != null ? sdf.format(asignacion.getFechaInicio()) : "No definida";
+                String fechaFinStr = asignacion.getFechaFin() != null ? sdf.format(asignacion.getFechaFin()) : "No definida";
+
+                JLabel labelFechaInicio = new JLabel("Inicia: " + fechaInicioStr);
+                labelFechaInicio.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelFechaInicio.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelFechaInicio);
+
+                JLabel labelFechaFin = new JLabel("Termina: " + fechaFinStr);
+                labelFechaFin.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelFechaFin.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelFechaFin);
+
+                // Duración
+                JLabel labelDuracion = new JLabel("Duración: " + eval.getDuracion() + " minutos");
+                labelDuracion.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelDuracion.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelDuracion);
+
+                // Cantidad de preguntas
+                int totalPreguntas = eval.getSeleccionesUnicas().size() +
+                                     eval.getSeleccionesMultiples().size() +
+                                     eval.getFalsoVerdaderos().size() +
+                                     eval.getPareos().size() +
+                                     eval.getSopas().size();
+
+                JLabel labelPreguntas = new JLabel("Total de preguntas: " + totalPreguntas);
+                labelPreguntas.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelPreguntas.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelPreguntas);
+
+                // Estado
+                String estado = "";
+                if (yaRealizada) {
+                    estado = "✓ Realizada";
+                } else if (asignacion.estaDisponibleHoy()) {
+                    estado = "✓ Disponible para realizar";
+                } else {
+                    estado = "✗ No disponible";
+                }
+
+                JLabel labelEstado = new JLabel("Estado: " + estado);
+                labelEstado.setFont(new Font("Arial", Font.BOLD, 14));
+                labelEstado.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelEstado);
+
+                // Botón para realizar evaluación (solo si está disponible y no realizada)
+                if (asignacion.estaDisponibleHoy() && !yaRealizada) {
+                    panelEval.add(Box.createVerticalStrut(10));
+                    JButton btnRealizar = new JButton("Realizar Evaluación");
+                    btnRealizar.setAlignmentX(Component.LEFT_ALIGNMENT);
+                    btnRealizar.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            ventanaEvaluaciones.dispose();
+                            realizarEvaluacion(estudiante, asignacion);
+                        }
+                    });
+                    panelEval.add(btnRealizar);
+                }
+
+                panelPrincipal.add(panelEval);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaEvaluaciones.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaEvaluaciones.add(scrollPane);
+        ventanaEvaluaciones.setVisible(true);
+    }
+
+    // Método para realizar evaluación usando la clase VentanaRealizarEvaluacion
+    private void realizarEvaluacion(Estudiantes estudiante, EvaluacionAsignada asignacion) {
+        VentanaRealizarEvaluacion ventana = new VentanaRealizarEvaluacion(estudiante, asignacion, this);
+        ventana.setVisible(true);
+    }
+
     private void abrirVentanaEstudiantes(Estudiantes estudiante) {
         // Cerrar ventana actual
         this.dispose();
@@ -4606,11 +5129,22 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
-        JPanel panelBoton = new JPanel();
-        panelBoton.add(btnVolver1);
+        JButton btnVerEvaluaciones = new JButton("Ver Evaluaciones");
+        btnVerEvaluaciones.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarEvaluacionesEstudiante(estudiante);
+            }
+        });
+
+        // Panel para los botones - usando GridLayout
+        JPanel panelBoton = new JPanel(new GridLayout(3, 2, 10, 10));
+        panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnMatricularCurso);
         panelBoton.add(btnVerMisCursos);
+        panelBoton.add(btnVerEvaluaciones);
+        panelBoton.add(new JLabel("")); // Espacio vacío
+        panelBoton.add(btnVolver1);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
 
         ventanaEstudiantes.setVisible(true);
