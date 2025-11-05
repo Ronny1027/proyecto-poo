@@ -32,6 +32,7 @@ public class Profesores implements Serializable{
     private static final long serialVersionUID = 1L;
     //Constructor
     public Profesores() {
+        this.gruposImpartiendo = new ArrayList<>();
     }
     public Profesores(String nombre, String apellido1, String apellido2,
                   String identificacion, String telefono, String correo,

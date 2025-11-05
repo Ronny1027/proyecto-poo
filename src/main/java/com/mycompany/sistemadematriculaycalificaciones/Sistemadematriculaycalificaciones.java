@@ -1778,15 +1778,20 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     //Finalmente si todo sale bien entonces se guarda el profesor, y se guarda e archivo.
     String resultado = grupoEncontrado.asignarProfesor(profesorEncontrado);
-    
+
     if (resultado == null) {
         // Éxito
-        guardarCursosEnArchivo(); // Guardar cambios
+        guardarCursosEnArchivo(); // Guardar cambios en cursos
+        guardarProfesoresEnArchivo(); // Guardar cambios en profesores (para actualizar gruposImpartiendo)
+        JOptionPane.showMessageDialog(ventana, "Profesor asignado exitosamente al grupo", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         // Limpiar campos
         txtIdentCur.setText("");
         txtIdentGru.setText("");
         txtIdentPro.setText("");
-    } 
+    } else {
+        // Mostrar el error devuelto por asignarProfesor
+        JOptionPane.showMessageDialog(ventana, resultado, "Error", JOptionPane.ERROR_MESSAGE);
+    }
 }
     private void ventanaAsociarProfesoresGrupos() {
         // Cerrar ventana actual
@@ -2428,10 +2433,411 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     dialog.setVisible(true);
     return preguntaCreada[0];
     }
+
+    // Método para ventana de Pareo
+    private Pareo ventanaPareo(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar Pregunta de Pareo", true);
+    dialog.setSize(600, 700);
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(2, 30);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(500, 60));
+
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+
+    // 3. COLUMNA 1 (Enunciados)
+    JLabel lblCol1 = new JLabel("Columna 1 - Enunciados:");
+    lblCol1.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelCol1 = new DefaultListModel<>();
+    JList<String> listaCol1 = new JList<>(modelCol1);
+    JScrollPane scrollCol1 = new JScrollPane(listaCol1);
+    scrollCol1.setMaximumSize(new Dimension(500, 100));
+
+    JPanel panelAgregarCol1 = new JPanel();
+    panelAgregarCol1.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JTextField txtItemCol1 = new JTextField(25);
+    JButton btnAgregarCol1 = new JButton("Agregar");
+    btnAgregarCol1.addActionListener(e -> {
+        String item = txtItemCol1.getText().trim();
+        if (!item.isEmpty()) {
+            modelCol1.addElement(item);
+            txtItemCol1.setText("");
+        }
+    });
+    panelAgregarCol1.add(txtItemCol1);
+    panelAgregarCol1.add(btnAgregarCol1);
+
+    // 4. COLUMNA 2 (Respuestas/Distractores)
+    JLabel lblCol2 = new JLabel("Columna 2 - Respuestas/Distractores:");
+    lblCol2.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelCol2 = new DefaultListModel<>();
+    JList<String> listaCol2 = new JList<>(modelCol2);
+    JScrollPane scrollCol2 = new JScrollPane(listaCol2);
+    scrollCol2.setMaximumSize(new Dimension(500, 100));
+
+    JPanel panelAgregarCol2 = new JPanel();
+    panelAgregarCol2.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JTextField txtItemCol2 = new JTextField(25);
+    JButton btnAgregarCol2 = new JButton("Agregar");
+    btnAgregarCol2.addActionListener(e -> {
+        String item = txtItemCol2.getText().trim();
+        if (!item.isEmpty()) {
+            modelCol2.addElement(item);
+            txtItemCol2.setText("");
+        }
+    });
+    panelAgregarCol2.add(txtItemCol2);
+    panelAgregarCol2.add(btnAgregarCol2);
+
+    // 5. RELACIONES
+    JLabel lblRelaciones = new JLabel("Relaciones correctas (índice Col1 -> índice Col2):");
+    lblRelaciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelRelaciones = new DefaultListModel<>();
+    JList<String> listaRelaciones = new JList<>(modelRelaciones);
+    JScrollPane scrollRelaciones = new JScrollPane(listaRelaciones);
+    scrollRelaciones.setMaximumSize(new Dimension(500, 80));
+
+    JPanel panelAgregarRelacion = new JPanel();
+    panelAgregarRelacion.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JLabel lblIndice1 = new JLabel("Col1:");
+    JTextField txtIndice1 = new JTextField(3);
+    JLabel lblIndice2 = new JLabel("-> Col2:");
+    JTextField txtIndice2 = new JTextField(3);
+    JButton btnAgregarRelacion = new JButton("Agregar Relación");
+    btnAgregarRelacion.addActionListener(e -> {
+        String idx1 = txtIndice1.getText().trim();
+        String idx2 = txtIndice2.getText().trim();
+        if (!idx1.isEmpty() && !idx2.isEmpty()) {
+            modelRelaciones.addElement(idx1 + " -> " + idx2);
+            txtIndice1.setText("");
+            txtIndice2.setText("");
+        }
+    });
+    panelAgregarRelacion.add(lblIndice1);
+    panelAgregarRelacion.add(txtIndice1);
+    panelAgregarRelacion.add(lblIndice2);
+    panelAgregarRelacion.add(txtIndice2);
+    panelAgregarRelacion.add(btnAgregarRelacion);
+
+    // 6. ORDEN ALEATORIO
+    JCheckBox chkOrdenAleatorio = new JCheckBox("Orden aleatorio");
+    chkOrdenAleatorio.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+
+    final Pareo[] preguntaCreada = {null};
+
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+
+        // Convertir las listas a List<String>
+        List<String> col1 = new ArrayList<>();
+        for (int i = 0; i < modelCol1.size(); i++) {
+            col1.add(modelCol1.getElementAt(i));
+        }
+
+        List<String> col2 = new ArrayList<>();
+        for (int i = 0; i < modelCol2.size(); i++) {
+            col2.add(modelCol2.getElementAt(i));
+        }
+
+        // Convertir relaciones
+        java.util.Map<Integer, Integer> relaciones = new java.util.HashMap<>();
+        for (int i = 0; i < modelRelaciones.size(); i++) {
+            String rel = modelRelaciones.getElementAt(i);
+            String[] partes = rel.split(" -> ");
+            if (partes.length == 2) {
+                try {
+                    int idx1 = Integer.parseInt(partes[0].trim());
+                    int idx2 = Integer.parseInt(partes[1].trim());
+                    relaciones.put(idx1, idx2);
+                } catch (NumberFormatException ex) {
+                    // Ignorar relaciones inválidas
+                }
+            }
+        }
+
+        // Crear pregunta
+        Pareo pareo = new Pareo(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            col1,
+            col2,
+            relaciones,
+            chkOrdenAleatorio.isSelected()
+        );
+
+        // Validar
+        String error = pareo.validar();
+        if (error != null) {
+            JOptionPane.showMessageDialog(dialog, error);
+            return;
+        }
+
+        preguntaCreada[0] = pareo;
+        if (preguntaCreada[0] != null) {
+            evalActual.agregarPareo(preguntaCreada[0]);
+            actualizarListaPreguntas(evalActual, listaPreg);
+        }
+        dialog.dispose();
+    });
+
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblCol1);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollCol1);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarCol1);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblCol2);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollCol2);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarCol2);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblRelaciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollRelaciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarRelacion);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(chkOrdenAleatorio);
+    panel.add(Box.createVerticalStrut(15));
+
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+
+    JScrollPane scrollPanel = new JScrollPane(panel);
+    dialog.add(scrollPanel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+
+    // Método para ventana de Sopa de Letras
+    private Sopa ventanaSopa(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar Sopa de Letras", true);
+    dialog.setSize(550, 600);
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(2, 30);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(450, 60));
+
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+
+    // 3. PALABRAS A BUSCAR (mínimo 10)
+    JLabel lblPalabras = new JLabel("Palabras a buscar (mínimo 10):");
+    lblPalabras.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelPalabras = new DefaultListModel<>();
+    JList<String> listaPalabras = new JList<>(modelPalabras);
+    JScrollPane scrollPalabras = new JScrollPane(listaPalabras);
+    scrollPalabras.setMaximumSize(new Dimension(450, 200));
+
+    JPanel panelAgregarPalabra = new JPanel();
+    panelAgregarPalabra.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JTextField txtPalabra = new JTextField(20);
+    JButton btnAgregarPalabra = new JButton("Agregar Palabra");
+    JButton btnEliminarPalabra = new JButton("Eliminar");
+
+    btnAgregarPalabra.addActionListener(e -> {
+        String palabra = txtPalabra.getText().trim();
+        if (!palabra.isEmpty()) {
+            modelPalabras.addElement(palabra.toUpperCase());
+            txtPalabra.setText("");
+        }
+    });
+
+    btnEliminarPalabra.addActionListener(e -> {
+        int selectedIndex = listaPalabras.getSelectedIndex();
+        if (selectedIndex != -1) {
+            modelPalabras.remove(selectedIndex);
+        }
+    });
+
+    panelAgregarPalabra.add(txtPalabra);
+    panelAgregarPalabra.add(btnAgregarPalabra);
+    panelAgregarPalabra.add(btnEliminarPalabra);
+
+    // 4. ORDEN ALEATORIO
+    JCheckBox chkOrdenAleatorio = new JCheckBox("Generar con posiciones aleatorias");
+    chkOrdenAleatorio.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // Contador de palabras
+    JLabel lblContador = new JLabel("Palabras agregadas: 0");
+    lblContador.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // Actualizar contador cuando se agregue o elimine
+    btnAgregarPalabra.addActionListener(e -> {
+        lblContador.setText("Palabras agregadas: " + modelPalabras.size());
+    });
+    btnEliminarPalabra.addActionListener(e -> {
+        lblContador.setText("Palabras agregadas: " + modelPalabras.size());
+    });
+
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+
+    final Sopa[] preguntaCreada = {null};
+
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+
+        // Convertir las palabras a List<String>
+        List<String> palabras = new ArrayList<>();
+        for (int i = 0; i < modelPalabras.size(); i++) {
+            palabras.add(modelPalabras.getElementAt(i));
+        }
+
+        if (palabras.size() < 10) {
+            JOptionPane.showMessageDialog(dialog, "Debe agregar al menos 10 palabras");
+            return;
+        }
+
+        // Crear pregunta
+        Sopa sopa = new Sopa(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            palabras,
+            chkOrdenAleatorio.isSelected()
+        );
+
+        // Validar
+        String error = sopa.validar();
+        if (error != null) {
+            JOptionPane.showMessageDialog(dialog, error);
+            return;
+        }
+
+        // Generar la sopa de letras
+        boolean generada = sopa.generarSopa();
+        if (!generada) {
+            JOptionPane.showMessageDialog(dialog, "Error al generar la sopa de letras");
+            return;
+        }
+
+        preguntaCreada[0] = sopa;
+        if (preguntaCreada[0] != null) {
+            evalActual.agregarSopa(preguntaCreada[0]);
+            actualizarListaPreguntas(evalActual, listaPreg);
+            JOptionPane.showMessageDialog(dialog, "Sopa de letras creada exitosamente!");
+        }
+        dialog.dispose();
+    });
+
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(15));
+
+    panel.add(lblPalabras);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollPalabras);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarPalabra);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblContador);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(chkOrdenAleatorio);
+    panel.add(Box.createVerticalStrut(15));
+
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+
+    JScrollPane scrollPanel = new JScrollPane(panel);
+    dialog.add(scrollPanel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+
     private void limpiarCamposEvaluacion(JTextField txtIdentEva, JTextField txtNomEva,
-                                   JTextField txtInstru, JTextField txtObjeti, 
+                                   JTextField txtInstru, JTextField txtObjeti,
                                    JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
-                                   JComboBox<String> comboRespuestAlea, JList<String> listaPreg, 
+                                   JComboBox<String> comboRespuestAlea, JList<String> listaPreg,
                                    Evaluaciones evaluacionActual) {
     txtIdentEva.setText("");
     txtNomEva.setText("");
@@ -2929,7 +3335,13 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaFalsoVerdadero(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
         });
         JButton btnAgregarPareo = new JButton("Pareo");
-        JButton btnAgregarSopa = new JButton("Sopa");
+        btnAgregarPareo.addActionListener(e -> {
+        ventanaPareo(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
+        JButton btnAgregarSopa = new JButton("Sopa de Letras");
+        btnAgregarSopa.addActionListener(e -> {
+        ventanaSopa(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
         // Botones de operaciones CRUD (en parejas)
         JButton btnRegistrar = new JButton("Registrar");
         btnRegistrar.addActionListener(new ActionListener() {
