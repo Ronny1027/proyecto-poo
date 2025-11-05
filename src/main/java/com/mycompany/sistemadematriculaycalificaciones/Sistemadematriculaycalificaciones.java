@@ -4677,7 +4677,16 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         List<EvaluacionAsignada> evaluacionesDelProfesor = new ArrayList<>();
 
         for (EvaluacionAsignada asignacion : evaluacionesAsignadas) {
-            if (gruposProfesor.contains(asignacion.getGrupo())) {
+            // Comparar grupos por identificación en lugar de usar contains
+            boolean grupoCoincide = false;
+            for (Grupos grupoProfesor : gruposProfesor) {
+                if (grupoProfesor.getCurso().getIdentificacion().equals(asignacion.getGrupo().getCurso().getIdentificacion()) &&
+                    grupoProfesor.getIdentificacionGrupo() == asignacion.getGrupo().getIdentificacionGrupo()) {
+                    grupoCoincide = true;
+                    break;
+                }
+            }
+            if (grupoCoincide) {
                 evaluacionesDelProfesor.add(asignacion);
             }
         }
@@ -4732,9 +4741,12 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
                 panelEval.add(Box.createVerticalStrut(10));
 
+                // Panel de botones (previsualizar y desasignar)
+                JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+                panelBotones.setAlignmentX(Component.LEFT_ALIGNMENT);
+
                 // Botón de previsualización
-                JButton btnPrevisualizar = new JButton("Previsualizar Evaluación");
-                btnPrevisualizar.setAlignmentX(Component.LEFT_ALIGNMENT);
+                JButton btnPrevisualizar = new JButton("Previsualizar");
                 btnPrevisualizar.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         VentanaRealizarEvaluacion ventanaPreview = new VentanaRealizarEvaluacion(
@@ -4742,7 +4754,45 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                         ventanaPreview.setVisible(true);
                     }
                 });
-                panelEval.add(btnPrevisualizar);
+                panelBotones.add(btnPrevisualizar);
+
+                // Botón de desasignar
+                JButton btnDesasignar = new JButton("Desasignar");
+                btnDesasignar.setBackground(new Color(220, 80, 80));
+                btnDesasignar.setForeground(Color.WHITE);
+                btnDesasignar.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        int confirmacion = JOptionPane.showConfirmDialog(
+                            ventanaEvaluaciones,
+                            "¿Está seguro que desea desasignar esta evaluación?\n\n" +
+                            "Evaluación: " + asignacion.getEvaluacion().getNombre() + "\n" +
+                            "Grupo: " + asignacion.getGrupo().getCurso().getNombre() + " - Grupo " + asignacion.getGrupo().getIdentificacionGrupo(),
+                            "Confirmar Desasignación",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                        );
+
+                        if (confirmacion == JOptionPane.YES_OPTION) {
+                            // Eliminar la asignación de la lista
+                            evaluacionesAsignadas.remove(asignacion);
+                            // Guardar cambios en archivo
+                            guardarEvaluacionesAsignadasEnArchivo();
+                            // Mostrar mensaje de éxito
+                            JOptionPane.showMessageDialog(
+                                ventanaEvaluaciones,
+                                "Evaluación desasignada exitosamente",
+                                "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            // Reabrir la ventana para actualizar la lista
+                            ventanaEvaluaciones.dispose();
+                            mostrarEvaluacionesAsignadas(profesor);
+                        }
+                    }
+                });
+                panelBotones.add(btnDesasignar);
+
+                panelEval.add(panelBotones);
 
                 panelPrincipal.add(panelEval);
                 panelPrincipal.add(Box.createVerticalStrut(15));
