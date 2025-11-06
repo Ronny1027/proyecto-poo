@@ -21,6 +21,11 @@ import javax.mail.MessagingException;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
 import java.util.Random;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 public class Sistemadematriculaycalificaciones extends JFrame {
     
@@ -2019,6 +2024,13 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 ventanaAsociarProfesoresGrupos();
             }
         });
+        JButton btnReportes = new JButton("Reportes");
+        btnReportes.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaAdministradores.dispose();
+                mostrarVentanaReportesAdministrador();
+            }
+        });
         // Panel para el botón
         JPanel panelBoton = new JPanel();
         panelBoton.setLayout(new BoxLayout(panelBoton, BoxLayout.Y_AXIS));
@@ -2029,20 +2041,23 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         btnCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAsoCur.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAsoPro.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnReportes.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnVolver1.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Agregar los botones con espacios
-        panelBoton.add(Box.createVerticalStrut(30)); // Empuja los botones al centro
+        panelBoton.add(Box.createVerticalStrut(20)); // Empuja los botones al centro
         panelBoton.add(btnEstudiantes);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnProfesores);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnCursos);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnAsoCur);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnAsoPro);
-        panelBoton.add(Box.createVerticalStrut(25));
+        panelBoton.add(Box.createVerticalStrut(12));
+        panelBoton.add(btnReportes);
+        panelBoton.add(Box.createVerticalStrut(20));
         panelBoton.add(btnVolver1);
         panelBoton.add(Box.createVerticalGlue()); // Empuja los botones al centro
 
@@ -5345,6 +5360,13 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
+        JButton btnReporte = new JButton("Reporte");
+        btnReporte.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarVentanaGenerarReporte(profesor);
+            }
+        });
+
         // Panel para los botones - usando GridLayout
         JPanel panelBoton = new JPanel(new GridLayout(4, 2, 10, 10));
         panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -5353,6 +5375,8 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelBoton.add(btnVerMisCursos);
         panelBoton.add(btnAsignarEvaluaciones);
         panelBoton.add(btnEvaluacionesAsignadas);
+        panelBoton.add(btnReporte);
+        panelBoton.add(new JLabel(""));
         panelBoton.add(btnVolver1);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
@@ -5958,6 +5982,898 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         JScrollPane scrollPane = new JScrollPane(panelPrincipal);
         ventanaDesempeno.add(scrollPane);
         ventanaDesempeno.setVisible(true);
+    }
+
+    // Método para mostrar ventana de generación de reportes
+    private void mostrarVentanaGenerarReporte(Profesores profesor) {
+        cargarEvaluacionesDesdeArchivo();
+
+        JFrame ventanaReporte = new JFrame("Generar Reporte de Evaluación");
+        ventanaReporte.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaReporte.setSize(600, 500);
+        ventanaReporte.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Seleccione una Evaluación para Generar Reporte");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        if (evaluaciones.isEmpty()) {
+            JLabel labelNoEval = new JLabel("No hay evaluaciones disponibles");
+            labelNoEval.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEval);
+        } else {
+            // Mostrar cada evaluación con un botón para generar reporte
+            for (Evaluaciones evaluacion : evaluaciones) {
+                JPanel panelEval = new JPanel();
+                panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
+                panelEval.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelEval.setMaximumSize(new Dimension(500, 100));
+                panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel labelNombre = new JLabel("Evaluación: " + evaluacion.getNombre());
+                labelNombre.setFont(new Font("Arial", Font.BOLD, 14));
+                labelNombre.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelNombre);
+
+                JLabel labelId = new JLabel("ID: " + evaluacion.getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelId);
+                panelEval.add(Box.createVerticalStrut(8));
+
+                JButton btnGenerar = new JButton("Generar PDF");
+                btnGenerar.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnGenerar.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        generarReportePDF(evaluacion);
+                    }
+                });
+                panelEval.add(btnGenerar);
+
+                panelPrincipal.add(panelEval);
+                panelPrincipal.add(Box.createVerticalStrut(10));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaReporte.dispose();
+            }
+        });
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaReporte.add(scrollPane);
+        ventanaReporte.setVisible(true);
+    }
+
+    // Método para generar el reporte PDF
+    private void generarReportePDF(Evaluaciones evaluacion) {
+        try {
+            // Crear un selector de archivo para guardar el PDF
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte PDF");
+            fileChooser.setSelectedFile(new File("Evaluacion_" + evaluacion.getIdentificacion() + "_" +
+                evaluacion.getNombre().replaceAll("[^a-zA-Z0-9]", "_") + ".pdf"));
+
+            int userSelection = fileChooser.showSaveDialog(null);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                String rutaArchivo = fileToSave.getAbsolutePath();
+                if (!rutaArchivo.toLowerCase().endsWith(".pdf")) {
+                    rutaArchivo += ".pdf";
+                }
+
+                // Crear el documento PDF
+                PDDocument document = new PDDocument();
+                PDPage page = new PDPage();
+                document.addPage(page);
+
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                float yPosition = 750;
+                float margin = 50;
+                float pageWidth = page.getMediaBox().getWidth();
+
+                // Título
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 18);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Evaluacion: " + evaluacion.getNombre());
+                contentStream.endText();
+                yPosition -= 30;
+
+                // ID
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("ID: " + evaluacion.getIdentificacion());
+                contentStream.endText();
+                yPosition -= 20;
+
+                // Instrucciones generales
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Instrucciones:");
+                contentStream.endText();
+                yPosition -= 15;
+
+                yPosition = escribirTextoMultilinea(contentStream, evaluacion.getInstrucGenerales(),
+                    margin, yPosition, pageWidth - 2 * margin, 10, document);
+                yPosition -= 10;
+
+                // Objetivos
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Objetivos:");
+                contentStream.endText();
+                yPosition -= 15;
+
+                for (String objetivo : evaluacion.getObjEva()) {
+                    yPosition = escribirTextoMultilinea(contentStream, "- " + objetivo,
+                        margin, yPosition, pageWidth - 2 * margin, 10, document);
+                    yPosition -= 5;
+
+                    if (yPosition < 50) {
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        contentStream = new PDPageContentStream(document, page);
+                        yPosition = 750;
+                    }
+                }
+                yPosition -= 10;
+
+                // Preguntas de Selección Única
+                int numeroPregunta = 1;
+                if (!evaluacion.getSeleccionesUnicas().isEmpty()) {
+                    for (SeleccionUnica pregunta : evaluacion.getSeleccionesUnicas()) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        char opcion = 'A';
+                        for (String opcionTexto : pregunta.getOpciones()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(opcion + ") " + opcionTexto);
+                            contentStream.endText();
+                            yPosition -= 15;
+                            opcion++;
+                        }
+                        yPosition -= 10;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Selección Múltiple
+                if (!evaluacion.getSeleccionesMultiples().isEmpty()) {
+                    for (SeleccionMultiple pregunta : evaluacion.getSeleccionesMultiples()) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". " + pregunta.getDescripcion() + " (Multiple)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        char opcion = 'A';
+                        for (String opcionTexto : pregunta.getOpciones()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(opcion + ") " + opcionTexto);
+                            contentStream.endText();
+                            yPosition -= 15;
+                            opcion++;
+                        }
+                        yPosition -= 10;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Falso/Verdadero
+                if (!evaluacion.getFalsoVerdaderos().isEmpty()) {
+                    for (FalsoVerdadero pregunta : evaluacion.getFalsoVerdaderos()) {
+                        if (yPosition < 80) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("( ) Verdadero    ( ) Falso");
+                        contentStream.endText();
+                        yPosition -= 20;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Pareo
+                if (!evaluacion.getPareos().isEmpty()) {
+                    for (Pareo pregunta : evaluacion.getPareos()) {
+                        if (yPosition < 150) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". Pareo: " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 20;
+
+                        // Columna 1
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Columna A:");
+                        contentStream.endText();
+                        yPosition -= 12;
+
+                        int i = 1;
+                        for (String item : pregunta.getColumna1()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(i + ". " + item);
+                            contentStream.endText();
+                            yPosition -= 12;
+                            i++;
+                        }
+                        yPosition -= 5;
+
+                        // Columna 2
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Columna B:");
+                        contentStream.endText();
+                        yPosition -= 12;
+
+                        i = 1;
+                        for (String item : pregunta.getColumna2()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(i + ". " + item);
+                            contentStream.endText();
+                            yPosition -= 12;
+                            i++;
+                        }
+                        yPosition -= 15;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Sopa de Letras
+                if (!evaluacion.getSopas().isEmpty()) {
+                    for (Sopa pregunta : evaluacion.getSopas()) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". Sopa de Letras: " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Palabras a buscar: " + String.join(", ", pregunta.getPalabras()));
+                        contentStream.endText();
+                        yPosition -= 20;
+                        numeroPregunta++;
+                    }
+                }
+
+                contentStream.close();
+                document.save(rutaArchivo);
+                document.close();
+
+                JOptionPane.showMessageDialog(null,
+                    "Reporte PDF generado exitosamente en:\n" + rutaArchivo,
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al generar el PDF: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    // Método auxiliar para escribir texto multilínea
+    private float escribirTextoMultilinea(PDPageContentStream contentStream, String texto,
+                                          float x, float y, float maxWidth, float fontSize,
+                                          PDDocument document) throws IOException {
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), fontSize);
+
+        String[] palabras = texto.split(" ");
+        StringBuilder linea = new StringBuilder();
+
+        for (String palabra : palabras) {
+            String lineaTest = linea + (linea.length() > 0 ? " " : "") + palabra;
+            float width = new PDType1Font(Standard14Fonts.FontName.HELVETICA).getStringWidth(lineaTest) / 1000 * fontSize;
+
+            if (width > maxWidth) {
+                contentStream.beginText();
+                contentStream.newLineAtOffset(x, y);
+                contentStream.showText(linea.toString());
+                contentStream.endText();
+                y -= fontSize + 2;
+                linea = new StringBuilder(palabra);
+            } else {
+                linea = new StringBuilder(lineaTest);
+            }
+        }
+
+        if (linea.length() > 0) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(x, y);
+            contentStream.showText(linea.toString());
+            contentStream.endText();
+            y -= fontSize + 2;
+        }
+
+        return y;
+    }
+
+    // Método para mostrar ventana de reportes del administrador
+    private void mostrarVentanaReportesAdministrador() {
+        cargarCursosDesdeArchivo();
+
+        JFrame ventanaReportes = new JFrame("Reportes de Administrador");
+        ventanaReportes.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaReportes.setSize(600, 550);
+        ventanaReportes.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Generar Reportes");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Tipo de reporte
+        JLabel labelTipo = new JLabel("Tipo de reporte:");
+        labelTipo.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelTipo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        String[] tiposReporte = {"Lista de Estudiantes", "Estadísticas de Matrícula"};
+        JComboBox<String> comboTipo = new JComboBox<>(tiposReporte);
+        comboTipo.setMaximumSize(new Dimension(400, 30));
+        comboTipo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(comboTipo);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Fecha de vigencia
+        JLabel labelFecha = new JLabel("Fecha de vigencia (yyyy-MM-dd):");
+        labelFecha.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelFecha);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JTextField txtFecha = new JTextField();
+        txtFecha.setMaximumSize(new Dimension(200, 25));
+        txtFecha.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(txtFecha);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Alcance del reporte
+        JLabel labelAlcance = new JLabel("Alcance del reporte:");
+        labelAlcance.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelAlcance);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        String[] alcances = {"Todos los cursos y grupos", "Un curso específico", "Un grupo específico"};
+        JComboBox<String> comboAlcance = new JComboBox<>(alcances);
+        comboAlcance.setMaximumSize(new Dimension(400, 30));
+        comboAlcance.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(comboAlcance);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Panel para selección de curso (inicialmente oculto)
+        JPanel panelCurso = new JPanel();
+        panelCurso.setLayout(new BoxLayout(panelCurso, BoxLayout.Y_AXIS));
+        panelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelCurso.setVisible(false);
+
+        JLabel labelCurso = new JLabel("Seleccione el curso:");
+        labelCurso.setFont(new Font("Arial", Font.BOLD, 12));
+        panelCurso.add(labelCurso);
+        panelCurso.add(Box.createVerticalStrut(5));
+
+        JComboBox<String> comboCurso = new JComboBox<>();
+        for (Cursos curso : cursos) {
+            comboCurso.addItem(curso.getNombre() + " (ID: " + curso.getIdentificacion() + ")");
+        }
+        comboCurso.setMaximumSize(new Dimension(400, 30));
+        panelCurso.add(comboCurso);
+        panelPrincipal.add(panelCurso);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Panel para selección de grupo (inicialmente oculto)
+        JPanel panelGrupo = new JPanel();
+        panelGrupo.setLayout(new BoxLayout(panelGrupo, BoxLayout.Y_AXIS));
+        panelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelGrupo.setVisible(false);
+
+        JLabel labelGrupo = new JLabel("Seleccione el grupo:");
+        labelGrupo.setFont(new Font("Arial", Font.BOLD, 12));
+        panelGrupo.add(labelGrupo);
+        panelGrupo.add(Box.createVerticalStrut(5));
+
+        JComboBox<String> comboGrupo = new JComboBox<>();
+        comboGrupo.setMaximumSize(new Dimension(400, 30));
+        panelGrupo.add(comboGrupo);
+        panelPrincipal.add(panelGrupo);
+
+        // Listener para cambiar visibilidad según alcance
+        comboAlcance.addActionListener(e -> {
+            int seleccion = comboAlcance.getSelectedIndex();
+            panelCurso.setVisible(seleccion >= 1);
+            panelGrupo.setVisible(seleccion == 2);
+
+            if (seleccion >= 1 && comboCurso.getItemCount() > 0) {
+                int cursoIndex = comboCurso.getSelectedIndex();
+                if (cursoIndex >= 0 && cursoIndex < cursos.size()) {
+                    Cursos cursoSeleccionado = cursos.get(cursoIndex);
+                    comboGrupo.removeAllItems();
+                    for (Grupos grupo : cursoSeleccionado.getGrupos()) {
+                        comboGrupo.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                    }
+                }
+            }
+
+            ventanaReportes.revalidate();
+            ventanaReportes.repaint();
+        });
+
+        // Listener para actualizar grupos cuando cambia el curso
+        comboCurso.addActionListener(e -> {
+            if (comboCurso.getSelectedIndex() >= 0) {
+                int cursoIndex = comboCurso.getSelectedIndex();
+                if (cursoIndex < cursos.size()) {
+                    Cursos cursoSeleccionado = cursos.get(cursoIndex);
+                    comboGrupo.removeAllItems();
+                    for (Grupos grupo : cursoSeleccionado.getGrupos()) {
+                        comboGrupo.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                    }
+                }
+            }
+        });
+
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Botón generar
+        JButton btnGenerar = new JButton("Generar Reporte PDF");
+        btnGenerar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnGenerar.addActionListener(e -> {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                Date fechaVigencia = sdf.parse(txtFecha.getText().trim());
+
+                int tipoReporte = comboTipo.getSelectedIndex();
+                int alcance = comboAlcance.getSelectedIndex();
+
+                Cursos cursoSeleccionado = null;
+                Grupos grupoSeleccionado = null;
+
+                if (alcance >= 1 && comboCurso.getSelectedIndex() >= 0) {
+                    cursoSeleccionado = cursos.get(comboCurso.getSelectedIndex());
+                }
+
+                if (alcance == 2 && comboGrupo.getSelectedIndex() >= 0 && cursoSeleccionado != null) {
+                    grupoSeleccionado = cursoSeleccionado.getGrupos().get(comboGrupo.getSelectedIndex());
+                }
+
+                if (tipoReporte == 0) {
+                    generarReporteListaEstudiantes(fechaVigencia, alcance, cursoSeleccionado, grupoSeleccionado);
+                } else {
+                    generarReporteEstadisticas(fechaVigencia, alcance, cursoSeleccionado, grupoSeleccionado);
+                }
+            } catch (ParseException ex) {
+                JOptionPane.showMessageDialog(ventanaReportes,
+                    "Formato de fecha inválido. Use yyyy-MM-dd",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        panelPrincipal.add(btnGenerar);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(e -> {
+            ventanaReportes.dispose();
+            abrirVentanaAdministradores();
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaReportes.add(scrollPane);
+        ventanaReportes.setVisible(true);
+    }
+
+    // Método para generar reporte de lista de estudiantes
+    private void generarReporteListaEstudiantes(Date fechaVigencia, int alcance, Cursos cursoEspecifico, Grupos grupoEspecifico) {
+        try {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte de Lista de Estudiantes");
+            fileChooser.setSelectedFile(new File("Reporte_Lista_Estudiantes_" +
+                new SimpleDateFormat("yyyyMMdd").format(fechaVigencia) + ".pdf"));
+
+            if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                String rutaArchivo = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!rutaArchivo.toLowerCase().endsWith(".pdf")) {
+                    rutaArchivo += ".pdf";
+                }
+
+                PDDocument document = new PDDocument();
+                PDPage page = new PDPage();
+                document.addPage(page);
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                float yPosition = 750;
+                float margin = 50;
+
+                // Título
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Lista de Estudiantes Matriculados");
+                contentStream.endText();
+                yPosition -= 20;
+
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Fecha de vigencia: " + sdf.format(fechaVigencia));
+                contentStream.endText();
+                yPosition -= 25;
+
+                // Obtener grupos vigentes según alcance
+                List<Grupos> gruposVigentes = obtenerGruposVigentes(fechaVigencia, alcance, cursoEspecifico, grupoEspecifico);
+
+                if (gruposVigentes.isEmpty()) {
+                    contentStream.beginText();
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                    contentStream.newLineAtOffset(margin, yPosition);
+                    contentStream.showText("No hay grupos vigentes para la fecha especificada.");
+                    contentStream.endText();
+                } else {
+                    for (Grupos grupo : gruposVigentes) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        // Encabezado del grupo
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 13);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("Curso: " + grupo.getCurso().getNombre());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("Grupo: " + grupo.getIdentificacionGrupo() + " | " +
+                            "Inicio: " + sdf.format(grupo.getFechaInicio()) + " | " +
+                            "Fin: " + sdf.format(grupo.getFechaFin()));
+                        contentStream.endText();
+                        yPosition -= 20;
+
+                        // Lista de estudiantes ordenada alfabéticamente
+                        List<Estudiantes> estudiantesOrdenados = new ArrayList<>(grupo.getEstudiantes());
+                        estudiantesOrdenados.sort((e1, e2) -> {
+                            int comparacion = e1.getApellido1().compareToIgnoreCase(e2.getApellido1());
+                            if (comparacion == 0) {
+                                comparacion = e1.getApellido2().compareToIgnoreCase(e2.getApellido2());
+                            }
+                            if (comparacion == 0) {
+                                comparacion = e1.getNombre().compareToIgnoreCase(e2.getNombre());
+                            }
+                            return comparacion;
+                        });
+
+                        if (estudiantesOrdenados.isEmpty()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText("Sin estudiantes matriculados");
+                            contentStream.endText();
+                            yPosition -= 15;
+                        } else {
+                            for (Estudiantes estudiante : estudiantesOrdenados) {
+                                if (yPosition < 50) {
+                                    contentStream.close();
+                                    page = new PDPage();
+                                    document.addPage(page);
+                                    contentStream = new PDPageContentStream(document, page);
+                                    yPosition = 750;
+                                }
+
+                                contentStream.beginText();
+                                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                                contentStream.newLineAtOffset(margin + 10, yPosition);
+                                contentStream.showText("- " + estudiante.getApellido1() + " " +
+                                    estudiante.getApellido2() + ", " + estudiante.getNombre() +
+                                    " (ID: " + estudiante.getIdentificacion() + ")");
+                                contentStream.endText();
+                                yPosition -= 13;
+                            }
+                        }
+                        yPosition -= 10;
+                    }
+                }
+
+                contentStream.close();
+                document.save(rutaArchivo);
+                document.close();
+
+                JOptionPane.showMessageDialog(null,
+                    "Reporte generado exitosamente en:\n" + rutaArchivo,
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al generar el PDF: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Método para generar reporte de estadísticas
+    private void generarReporteEstadisticas(Date fechaVigencia, int alcance, Cursos cursoEspecifico, Grupos grupoEspecifico) {
+        try {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte de Estadísticas");
+            fileChooser.setSelectedFile(new File("Reporte_Estadisticas_" +
+                new SimpleDateFormat("yyyyMMdd").format(fechaVigencia) + ".pdf"));
+
+            if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                String rutaArchivo = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!rutaArchivo.toLowerCase().endsWith(".pdf")) {
+                    rutaArchivo += ".pdf";
+                }
+
+                PDDocument document = new PDDocument();
+                PDPage page = new PDPage();
+                document.addPage(page);
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                float yPosition = 750;
+                float margin = 50;
+
+                // Título
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Estadisticas de Matricula");
+                contentStream.endText();
+                yPosition -= 20;
+
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Fecha de vigencia: " + sdf.format(fechaVigencia));
+                contentStream.endText();
+                yPosition -= 25;
+
+                // Obtener grupos vigentes según alcance
+                List<Grupos> gruposVigentes = obtenerGruposVigentes(fechaVigencia, alcance, cursoEspecifico, grupoEspecifico);
+
+                if (gruposVigentes.isEmpty()) {
+                    contentStream.beginText();
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                    contentStream.newLineAtOffset(margin, yPosition);
+                    contentStream.showText("No hay grupos vigentes para la fecha especificada.");
+                    contentStream.endText();
+                } else {
+                    int totalEstudiantes = 0;
+
+                    for (Grupos grupo : gruposVigentes) {
+                        if (yPosition < 80) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        int cantidadEstudiantes = grupo.getEstudiantes().size();
+                        totalEstudiantes += cantidadEstudiantes;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("Curso: " + grupo.getCurso().getNombre());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Grupo: " + grupo.getIdentificacionGrupo() + " | " +
+                            "Periodo: " + sdf.format(grupo.getFechaInicio()) + " - " + sdf.format(grupo.getFechaFin()));
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Cantidad de estudiantes: " + cantidadEstudiantes);
+                        contentStream.endText();
+                        yPosition -= 20;
+                    }
+
+                    // Total general
+                    yPosition -= 10;
+                    contentStream.beginText();
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
+                    contentStream.newLineAtOffset(margin, yPosition);
+                    contentStream.showText("TOTAL GENERAL: " + totalEstudiantes + " estudiantes");
+                    contentStream.endText();
+                }
+
+                contentStream.close();
+                document.save(rutaArchivo);
+                document.close();
+
+                JOptionPane.showMessageDialog(null,
+                    "Reporte generado exitosamente en:\n" + rutaArchivo,
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al generar el PDF: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Método auxiliar para obtener grupos vigentes
+    private List<Grupos> obtenerGruposVigentes(Date fechaVigencia, int alcance, Cursos cursoEspecifico, Grupos grupoEspecifico) {
+        List<Grupos> gruposVigentes = new ArrayList<>();
+
+        if (alcance == 2 && grupoEspecifico != null) {
+            // Un grupo específico
+            if (grupoEspecifico.getFechaFin() != null &&
+                !grupoEspecifico.getFechaFin().before(fechaVigencia)) {
+                gruposVigentes.add(grupoEspecifico);
+            }
+        } else if (alcance == 1 && cursoEspecifico != null) {
+            // Un curso específico
+            for (Grupos grupo : cursoEspecifico.getGrupos()) {
+                if (grupo.getFechaFin() != null &&
+                    !grupo.getFechaFin().before(fechaVigencia)) {
+                    gruposVigentes.add(grupo);
+                }
+            }
+        } else {
+            // Todos los cursos y grupos
+            for (Cursos curso : cursos) {
+                for (Grupos grupo : curso.getGrupos()) {
+                    if (grupo.getFechaFin() != null &&
+                        !grupo.getFechaFin().before(fechaVigencia)) {
+                        gruposVigentes.add(grupo);
+                    }
+                }
+            }
+        }
+
+        return gruposVigentes;
     }
 
     public static void main(String[] args) {
