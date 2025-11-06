@@ -38,11 +38,11 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         
         
         //Se inician los archivos
-        cargarEstudiantesDesdeArchivo();
-        cargarProfesoresDesdeArchivo();
-        cargarCursosDesdeArchivo();
-        cargarEvaluacionesAsignadasDesdeArchivo();
-        cargarEvaluacionesRealizadasDesdeArchivo();
+        estudiantes = GestorArchivos.cargarEstudiantes();
+        profesores = GestorArchivos.cargarProfesores();
+        cursos = GestorArchivos.cargarCursos();
+        evaluacionesAsignadas = GestorArchivos.cargarEvaluacionesAsignadas();
+        evaluacionesRealizadas = GestorArchivos.cargarEvaluacionesRealizadas();
         // Crear componentes
         crearInterfaz();
     }
@@ -148,177 +148,42 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     }
     
-    //Manejo de archivos
+    //Manejo de archivos - Usando GestorArchivos
     //Estudiantes
     private java.util.List<Estudiantes> estudiantes = new java.util.ArrayList<>();
     private Estudiantes estudianteAutenticado; // Usuario estudiante autenticado
     private String codigoVerificacionEstudiante; // Código de verificación para recuperación
-    private static final String ARCHIVO_ESTUDIANTES = "estudiantes.dat";
-    //Función para guardar la info en un archivo.
-    private void guardarEstudiantesEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_ESTUDIANTES))) {
-        oos.writeObject(estudiantes);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de estudiantes.
-    private void cargarEstudiantesDesdeArchivo() {
-    File archivo = new File(ARCHIVO_ESTUDIANTES);
-    if (!archivo.exists()) {
-        estudiantes = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_ESTUDIANTES));
-        estudiantes = (List<Estudiantes>) ois.readObject();
-        ois.close();
-        
-    } catch (IOException | ClassNotFoundException e) {
-        JOptionPane.showMessageDialog(null, "Error al cargar estudiantes: " + e.getMessage());
-        estudiantes = new ArrayList<>();
-    }
-    }
+
     //Profesores
     private java.util.List<Profesores> profesores = new java.util.ArrayList<>();
     private Profesores profesorAutenticado; // Usuario profesor autenticado
     private String codigoVerificacionProfesor; // Código de verificación para recuperación
-    private static final String ARCHIVO_PROFESORES = "profesores.dat";
-    //Función para guardar la info en un archivo.
-    private void guardarProfesoresEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_PROFESORES))) {
-        oos.writeObject(profesores);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de profesores.
-    private void cargarProfesoresDesdeArchivo() {
-    File archivo = new File(ARCHIVO_PROFESORES);
-    if (!archivo.exists()) {
-        profesores = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_PROFESORES));
-        profesores = (List<Profesores>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        profesores = new ArrayList<>();
-    }
-    }
+
     //Cursos
     private java.util.List<Cursos> cursos = new java.util.ArrayList<>();
-    private static final String ARCHIVO_CURSOS = "cursos.dat";
-    //Función para guardar la info en un archivo.
-    private void guardarCursosEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_CURSOS))) {
-        oos.writeObject(cursos);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de cursos.
-    private void cargarCursosDesdeArchivo() {
-    File archivo = new File(ARCHIVO_CURSOS);
-    if (!archivo.exists()) {
-        cursos = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_CURSOS));
-        cursos = (List<Cursos>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        cursos = new ArrayList<>();
-    }
-    }
+
     //Evaluaciones
     private java.util.List<Evaluaciones> evaluaciones = new java.util.ArrayList<>();
-    private static final String ARCHIVO_EVALUACIONES = "evaluaciones.dat";
-    
-    private void guardarEvaluacionesEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES))) {
-        oos.writeObject(evaluaciones);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de cursos.
-    private void cargarEvaluacionesDesdeArchivo() {
-    File archivo = new File(ARCHIVO_EVALUACIONES);
-    if (!archivo.exists()) {
-        evaluaciones = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES));
-        evaluaciones = (List<Evaluaciones>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        evaluaciones = new ArrayList<>();
-    }
-    }
 
     //Evaluaciones Asignadas
     private java.util.List<EvaluacionAsignada> evaluacionesAsignadas = new java.util.ArrayList<>();
-    private static final String ARCHIVO_EVALUACIONES_ASIGNADAS = "evaluacionesAsignadas.dat";
-
-    private void guardarEvaluacionesAsignadasEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES_ASIGNADAS))) {
-        oos.writeObject(evaluacionesAsignadas);
-    } catch (IOException e) {
-    }
-    }
-
-    private void cargarEvaluacionesAsignadasDesdeArchivo() {
-    File archivo = new File(ARCHIVO_EVALUACIONES_ASIGNADAS);
-    if (!archivo.exists()) {
-        evaluacionesAsignadas = new ArrayList<>();
-        return;
-    }
-
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES_ASIGNADAS));
-        evaluacionesAsignadas = (List<EvaluacionAsignada>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        evaluacionesAsignadas = new ArrayList<>();
-    }
-    }
 
     //Evaluaciones Realizadas
     private java.util.List<EvaluacionRealizada> evaluacionesRealizadas = new java.util.ArrayList<>();
-    private static final String ARCHIVO_EVALUACIONES_REALIZADAS = "evaluacionesRealizadas.dat";
 
-    private void guardarEvaluacionesRealizadasEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES_REALIZADAS))) {
-        oos.writeObject(evaluacionesRealizadas);
-    } catch (IOException e) {
-    }
-    }
-
-    private void cargarEvaluacionesRealizadasDesdeArchivo() {
-    File archivo = new File(ARCHIVO_EVALUACIONES_REALIZADAS);
-    if (!archivo.exists()) {
-        evaluacionesRealizadas = new ArrayList<>();
-        return;
-    }
-
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES_REALIZADAS));
-        evaluacionesRealizadas = (List<EvaluacionRealizada>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        evaluacionesRealizadas = new ArrayList<>();
-    }
-    }
+    // Getters públicos para acceso desde otras clases
+    public List<Estudiantes> getEstudiantes() { return estudiantes; }
+    public List<Profesores> getProfesores() { return profesores; }
+    public List<Cursos> getCursos() { return cursos; }
+    public List<Evaluaciones> getEvaluaciones() { return evaluaciones; }
+    public List<EvaluacionAsignada> getEvaluacionesAsignadas() { return evaluacionesAsignadas; }
+    public List<EvaluacionRealizada> getEvaluacionesRealizadas() { return evaluacionesRealizadas; }
 
     // Método público para agregar evaluación realizada y guardar
     public void agregarEvaluacionRealizada(EvaluacionRealizada evaluacionRealizada) {
         if (evaluacionRealizada != null) {
             evaluacionesRealizadas.add(evaluacionRealizada);
-            guardarEvaluacionesRealizadasEnArchivo();
+            GestorArchivos.guardarEvaluacionesRealizadas(evaluacionesRealizadas);
         }
     }
 
@@ -365,7 +230,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
             return;
         }
         estudiantes.add(nuevoEstudiante);
-        guardarEstudiantesEnArchivo();//Si no hay errores y el programa sigue entonces se guarda.
+        GestorArchivos.guardarEstudiantes(estudiantes);//Si no hay errores y el programa sigue entonces se guarda.
         limpiarCampos(txtNom, txtApel1, txtApel2, txtIdent, txtTelefono, 
               txtCorreo, txtDirec, txtOrganizacion, txtTemasInteres, txtContraseña);  
         try {
@@ -468,7 +333,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 return;
             }
             
-            guardarEstudiantesEnArchivo();
+            GestorArchivos.guardarEstudiantes(estudiantes);
             try {
             enviarCorreo(
             est.getCorreo(),
@@ -511,7 +376,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 System.out.println("No se pudo enviar correo: " + e.getMessage());
             }
             estudiantes.remove(est);
-            guardarEstudiantesEnArchivo();
+            GestorArchivos.guardarEstudiantes(estudiantes);
            limpiarCampos(txtNom, txtApel1, txtApel2, txtIdent, txtTelefono, 
               txtCorreo, txtDirec, txtOrganizacion, txtTemasInteres, txtContraseña); 
             return;
@@ -785,7 +650,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     }
     
     profesores.add(nuevoProfesor);
-    guardarProfesoresEnArchivo();
+    GestorArchivos.guardarProfesores(profesores);
     try {
         enviarCorreo(
         nuevoProfesor.getCorreo(),
@@ -899,7 +764,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 return;
             }
             
-            guardarProfesoresEnArchivo();
+            GestorArchivos.guardarProfesores(profesores);
             try {
                 enviarCorreo(
                 prof.getCorreo(),
@@ -942,7 +807,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 System.out.println("No se pudo enviar correo: " + e.getMessage());
             }
             profesores.remove(prof);
-            guardarProfesoresEnArchivo();
+            GestorArchivos.guardarProfesores(profesores);
             limpiarCampos(txtNom, txtApel1, txtApel2, txtIdent, txtTelefono, 
                          txtCorreo, txtDirec, txtTitulos, txtCertificaciones, txtContraseña);
             return;
@@ -1248,7 +1113,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     }
     
     cursos.add(nuevoCurso);
-    guardarCursosEnArchivo();
+    GestorArchivos.guardarCursos(cursos);
     limpiarCamposCursos(txtIdentCur, txtNomCurso, txtDescCur, txtCantHoras, txtEstuMini, 
                        txtEstuMax, txtCaliMini, comboModalidad, comboTipoCurso);
     
@@ -1372,7 +1237,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 return;
             }
             
-            guardarCursosEnArchivo();
+            GestorArchivos.guardarCursos(cursos);
             JOptionPane.showMessageDialog(null, "Curso modificado exitosamente");
             return;
         }
@@ -1394,7 +1259,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     for (Cursos curso : cursos) {
         if (curso.getIdentificacion().equals(identificacion)) {
             cursos.remove(curso);
-            guardarCursosEnArchivo();
+            GestorArchivos.guardarCursos(cursos);
             limpiarCamposCursos(txtIdentCur, txtNomCurso, txtDescCur, txtCantHoras, txtEstuMini, 
                                txtEstuMax, txtCaliMini, comboModalidad, comboTipoCurso);
             return;
@@ -1674,7 +1539,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     // Asignar grupo al curso
         cursoEncontrado.agregarGrupo(nuevoGrupo);
-        guardarCursosEnArchivo();
+        GestorArchivos.guardarCursos(cursos);
         
         
         // Limpiar campos
@@ -1852,8 +1717,8 @@ public class Sistemadematriculaycalificaciones extends JFrame {
 
     if (resultado == null) {
         // Éxito
-        guardarCursosEnArchivo(); // Guardar cambios en cursos
-        guardarProfesoresEnArchivo(); // Guardar cambios en profesores (para actualizar gruposImpartiendo)
+        GestorArchivos.guardarCursos(cursos); // Guardar cambios en cursos
+        GestorArchivos.guardarProfesores(profesores); // Guardar cambios en profesores (para actualizar gruposImpartiendo)
         JOptionPane.showMessageDialog(ventana, "Profesor asignado exitosamente al grupo", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         // Limpiar campos
         txtIdentCur.setText("");
@@ -1959,9 +1824,9 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     private void abrirVentanaAdministradores() {
         // Cerrar ventana actual
         this.dispose();
-        cargarEstudiantesDesdeArchivo();
-        cargarProfesoresDesdeArchivo();
-        cargarCursosDesdeArchivo();
+        estudiantes = GestorArchivos.cargarEstudiantes();
+        profesores = GestorArchivos.cargarProfesores();
+        cursos = GestorArchivos.cargarCursos();
         
         // Crear nueva ventana
         JFrame ventanaAdministradores = new JFrame("Ventana de Administradores");
@@ -3034,7 +2899,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     evaluaciones.add(nuevaEvaluacion);
     
     
-    guardarEvaluacionesEnArchivo();
+    GestorArchivos.guardarEvaluaciones(evaluaciones);
     
     
     
@@ -3047,7 +2912,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                                 JTextField txtInstru, JTextField txtObjeti, 
                                 JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
                                 JComboBox<String> comboRespuestAlea, JScrollPane scrollPreguntas) {
-    cargarEvaluacionesDesdeArchivo();
+    evaluaciones = GestorArchivos.cargarEvaluaciones();
     
     
     // Validar que la identificación no esté vacía
@@ -3135,7 +3000,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                                Evaluaciones evaluacionActual) {
     
     // Cargar evaluaciones actuales
-    cargarEvaluacionesDesdeArchivo();
+    evaluaciones = GestorArchivos.cargarEvaluaciones();
     
     // Se valida que la identificación no este vacia.
     if (txtIdentEva.getText().trim().isEmpty()) {
@@ -3167,7 +3032,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     
     // Eliminar la evaluación
     evaluaciones.remove(evaluacionEncontrada);
-    guardarEvaluacionesEnArchivo();
+    GestorArchivos.guardarEvaluaciones(evaluaciones);
     
     limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
                            comboPreguntAlea, comboRespuestAlea, listaPreg, evaluacionActual);
@@ -3181,7 +3046,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                                 Evaluaciones evaluacionActual) {
     
     // Cargar evaluaciones actuales
-    cargarEvaluacionesDesdeArchivo();
+    evaluaciones = GestorArchivos.cargarEvaluaciones();
     
     // Validar que la identificación no esté vacía
     if (txtIdentEva.getText().trim().isEmpty()) {
@@ -3269,7 +3134,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     
     // Reemplazar la evaluación antigua con la actualizada
     evaluaciones.set(indiceEncontrado, evaluacionActualizada);
-    guardarEvaluacionesEnArchivo();
+    GestorArchivos.guardarEvaluaciones(evaluaciones);
     limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
                            comboPreguntAlea, comboRespuestAlea, listaPreg, evaluacionActual);
     
@@ -3968,11 +3833,11 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                 if (esEstudiante) {
                     Estudiantes est = (Estudiantes) usuario;
                     est.setContrasena(nuevaContrasena);
-                    guardarEstudiantesEnArchivo();
+                    GestorArchivos.guardarEstudiantes(estudiantes);
                 } else {
                     Profesores prof = (Profesores) usuario;
                     prof.setContrasena(nuevaContrasena);
-                    guardarProfesoresEnArchivo();
+                    GestorArchivos.guardarProfesores(profesores);
                 }
 
                 JOptionPane.showMessageDialog(ventanaCambio,
@@ -4135,8 +4000,8 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
                 if (resultado.equals("Matriculado satisfactoriamente.")) {
                     // Guardar cambios
-                    guardarEstudiantesEnArchivo();
-                    guardarCursosEnArchivo();
+                    GestorArchivos.guardarEstudiantes(estudiantes);
+                    GestorArchivos.guardarCursos(cursos);
 
                     JOptionPane.showMessageDialog(ventanaMatricula,
                         resultado,
@@ -4512,7 +4377,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelPrincipal.add(Box.createVerticalStrut(20));
 
         // Cargar evaluaciones
-        cargarEvaluacionesDesdeArchivo();
+        evaluaciones = GestorArchivos.cargarEvaluaciones();
 
         // ComboBox de Evaluaciones
         JLabel labelEvaluacion = new JLabel("Seleccione una evaluación:");
@@ -4645,7 +4510,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                         // Crear evaluación asignada
                         EvaluacionAsignada nuevaAsignacion = new EvaluacionAsignada(evaluacionSeleccionada, grupoSeleccionado, fechaInicio, fechaFin);
                         evaluacionesAsignadas.add(nuevaAsignacion);
-                        guardarEvaluacionesAsignadasEnArchivo();
+                        GestorArchivos.guardarEvaluacionesAsignadas(evaluacionesAsignadas);
 
                         JOptionPane.showMessageDialog(ventanaAsignar, "Evaluación asignada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                         ventanaAsignar.dispose();
@@ -4800,7 +4665,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                             // Eliminar la asignación de la lista
                             evaluacionesAsignadas.remove(asignacion);
                             // Guardar cambios en archivo
-                            guardarEvaluacionesAsignadasEnArchivo();
+                            GestorArchivos.guardarEvaluacionesAsignadas(evaluacionesAsignadas);
                             // Mostrar mensaje de éxito
                             JOptionPane.showMessageDialog(
                                 ventanaEvaluaciones,
@@ -4841,7 +4706,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     // Método para mostrar las evaluaciones realizadas por los estudiantes
     private void mostrarEvaluacionesRealizadas(EvaluacionAsignada asignacion) {
         // Cargar las evaluaciones realizadas desde archivo
-        cargarEvaluacionesRealizadasDesdeArchivo();
+        evaluacionesRealizadas = GestorArchivos.cargarEvaluacionesRealizadas();
 
         JFrame ventanaRealizadas = new JFrame("Evaluaciones Realizadas");
         ventanaRealizadas.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -5305,7 +5170,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     private void abrirVentanaProfesores(Profesores profesor) {
         // Cerrar ventana actual
         this.dispose();
-        cargarEvaluacionesDesdeArchivo();
+        evaluaciones = GestorArchivos.cargarEvaluaciones();
         // Crear nueva ventana
         JFrame ventanaProfesores = new JFrame("Ventana de profesores");
         ventanaProfesores.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -5816,7 +5681,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     // Método para mostrar el desempeño personal del estudiante
     private void mostrarDesempenoPersonal(Estudiantes estudiante) {
         // Cargar las evaluaciones realizadas desde archivo
-        cargarEvaluacionesRealizadasDesdeArchivo();
+        evaluacionesRealizadas = GestorArchivos.cargarEvaluacionesRealizadas();
 
         JFrame ventanaDesempeno = new JFrame("Desempeño Personal");
         ventanaDesempeno.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -5986,7 +5851,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
     // Método para mostrar ventana de generación de reportes
     private void mostrarVentanaGenerarReporte(Profesores profesor) {
-        cargarEvaluacionesDesdeArchivo();
+        evaluaciones = GestorArchivos.cargarEvaluaciones();
 
         JFrame ventanaReporte = new JFrame("Generar Reporte de Evaluación");
         ventanaReporte.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -6417,7 +6282,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
     // Método para mostrar ventana de reportes del administrador
     private void mostrarVentanaReportesAdministrador() {
-        cargarCursosDesdeArchivo();
+        cursos = GestorArchivos.cargarCursos();
 
         JFrame ventanaReportes = new JFrame("Reportes de Administrador");
         ventanaReportes.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
