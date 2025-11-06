@@ -5764,6 +5764,13 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
+        JButton btnDesempenoPersonal = new JButton("Desempeño Personal");
+        btnDesempenoPersonal.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarDesempenoPersonal(estudiante);
+            }
+        });
+
         // Panel para los botones - usando GridLayout
         JPanel panelBoton = new JPanel(new GridLayout(3, 2, 10, 10));
         panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -5771,7 +5778,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelBoton.add(btnMatricularCurso);
         panelBoton.add(btnVerMisCursos);
         panelBoton.add(btnVerEvaluaciones);
-        panelBoton.add(new JLabel("")); // Espacio vacío
+        panelBoton.add(btnDesempenoPersonal);
         panelBoton.add(btnVolver1);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
 
@@ -5782,6 +5789,177 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     
     
     
+    // Método para mostrar el desempeño personal del estudiante
+    private void mostrarDesempenoPersonal(Estudiantes estudiante) {
+        // Cargar las evaluaciones realizadas desde archivo
+        cargarEvaluacionesRealizadasDesdeArchivo();
+
+        JFrame ventanaDesempeno = new JFrame("Desempeño Personal");
+        ventanaDesempeno.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaDesempeno.setSize(900, 650);
+        ventanaDesempeno.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Mi Historial de Evaluaciones");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Nombre del estudiante
+        JLabel labelEstudiante = new JLabel("Estudiante: " + estudiante.getNombre() + " " +
+                                           estudiante.getApellido1() + " " + estudiante.getApellido2());
+        labelEstudiante.setFont(new Font("Arial", Font.BOLD, 16));
+        labelEstudiante.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelEstudiante);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Filtrar evaluaciones realizadas por este estudiante
+        List<EvaluacionRealizada> misEvaluaciones = new ArrayList<>();
+        for (EvaluacionRealizada realizada : evaluacionesRealizadas) {
+            if (realizada.getEstudiante().getIdentificacion().equals(estudiante.getIdentificacion()) &&
+                realizada.isFinalizada()) {
+                misEvaluaciones.add(realizada);
+            }
+        }
+
+        if (misEvaluaciones.isEmpty()) {
+            JLabel labelNoEvaluaciones = new JLabel("No has realizado ninguna evaluación aún");
+            labelNoEvaluaciones.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEvaluaciones.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEvaluaciones);
+        } else {
+            // Calcular estadísticas generales
+            double sumaCalificaciones = 0;
+            double maxCalificacion = 0;
+            double minCalificacion = Double.MAX_VALUE;
+            int totalEvaluaciones = misEvaluaciones.size();
+
+            for (EvaluacionRealizada realizada : misEvaluaciones) {
+                double cal = realizada.getCalificacionObtenida();
+                sumaCalificaciones += cal;
+                if (cal > maxCalificacion) maxCalificacion = cal;
+                if (cal < minCalificacion) minCalificacion = cal;
+            }
+
+            double promedio = sumaCalificaciones / totalEvaluaciones;
+
+            // Panel de estadísticas generales
+            JPanel panelEstadisticas = new JPanel();
+            panelEstadisticas.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+            panelEstadisticas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelEstadisticas.setBorder(BorderFactory.createTitledBorder("Resumen General"));
+
+            JLabel labelTotal = new JLabel("Total evaluaciones: " + totalEvaluaciones);
+            JLabel labelPromedio = new JLabel(String.format("Promedio: %.2f", promedio));
+            JLabel labelMax = new JLabel(String.format("Mejor: %.2f", maxCalificacion));
+            JLabel labelMin = new JLabel(String.format("Más baja: %.2f", minCalificacion));
+
+            panelEstadisticas.add(labelTotal);
+            panelEstadisticas.add(labelPromedio);
+            panelEstadisticas.add(labelMax);
+            panelEstadisticas.add(labelMin);
+
+            panelPrincipal.add(panelEstadisticas);
+            panelPrincipal.add(Box.createVerticalStrut(20));
+
+            // Ordenar por fecha (más recientes primero)
+            misEvaluaciones.sort((e1, e2) -> {
+                Date fecha1 = e1.getFechaHoraFin() != null ? e1.getFechaHoraFin() : e1.getFechaHoraInicio();
+                Date fecha2 = e2.getFechaHoraFin() != null ? e2.getFechaHoraFin() : e2.getFechaHoraInicio();
+                if (fecha1 == null || fecha2 == null) return 0;
+                return fecha2.compareTo(fecha1);
+            });
+
+            // Mostrar cada evaluación realizada
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+            for (EvaluacionRealizada realizada : misEvaluaciones) {
+                JPanel panelEvaluacion = new JPanel();
+                panelEvaluacion.setLayout(new BoxLayout(panelEvaluacion, BoxLayout.Y_AXIS));
+                panelEvaluacion.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)
+                ));
+                panelEvaluacion.setMaximumSize(new Dimension(800, 180));
+                panelEvaluacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre de la evaluación
+                JLabel labelNombreEval = new JLabel(realizada.getEvaluacionAsignada().getEvaluacion().getNombre());
+                labelNombreEval.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombreEval.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelNombreEval);
+                panelEvaluacion.add(Box.createVerticalStrut(5));
+
+                // Información del curso y grupo
+                JLabel labelCurso = new JLabel("Curso: " +
+                    realizada.getEvaluacionAsignada().getGrupo().getCurso().getNombre() +
+                    " - Grupo " + realizada.getEvaluacionAsignada().getGrupo().getIdentificacionGrupo());
+                labelCurso.setFont(new Font("Arial", Font.PLAIN, 13));
+                labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelCurso);
+                panelEvaluacion.add(Box.createVerticalStrut(8));
+
+                // Calificación obtenida
+                JLabel labelCalificacion = new JLabel(String.format("Calificación: %.2f puntos",
+                    realizada.getCalificacionObtenida()));
+                labelCalificacion.setFont(new Font("Arial", Font.BOLD, 18));
+                labelCalificacion.setForeground(new Color(0, 120, 0));
+                labelCalificacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelCalificacion);
+                panelEvaluacion.add(Box.createVerticalStrut(5));
+
+                // Fecha de realización
+                String fechaRealizacion = "Realizada el: ";
+                if (realizada.getFechaHoraFin() != null) {
+                    fechaRealizacion += sdf.format(realizada.getFechaHoraFin());
+                } else if (realizada.getFechaHoraInicio() != null) {
+                    fechaRealizacion += sdf.format(realizada.getFechaHoraInicio());
+                } else {
+                    fechaRealizacion += "Fecha no disponible";
+                }
+
+                JLabel labelFecha = new JLabel(fechaRealizacion);
+                labelFecha.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelFecha.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelFecha);
+                panelEvaluacion.add(Box.createVerticalStrut(10));
+
+                // Botón para ver detalles
+                JButton btnVerDetalle = new JButton("Ver Mis Respuestas");
+                btnVerDetalle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnVerDetalle.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        mostrarDetalleEvaluacionRealizada(realizada);
+                    }
+                });
+                panelEvaluacion.add(btnVerDetalle);
+
+                panelPrincipal.add(panelEvaluacion);
+                panelPrincipal.add(Box.createVerticalStrut(12));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaDesempeno.dispose();
+            }
+        });
+        panelPrincipal.add(Box.createVerticalStrut(15));
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaDesempeno.add(scrollPane);
+        ventanaDesempeno.setVisible(true);
+    }
+
     public static void main(String[] args) {
         // Ejecutar en el Event Dispatch Thread
         SwingUtilities.invokeLater(new Runnable() {
