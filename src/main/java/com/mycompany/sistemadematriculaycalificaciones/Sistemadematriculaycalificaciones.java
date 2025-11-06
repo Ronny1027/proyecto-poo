@@ -7,6 +7,8 @@ package com.mycompany.sistemadematriculaycalificaciones;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -4756,10 +4758,17 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                 });
                 panelBotones.add(btnPrevisualizar);
 
+                // Botón de realizadas
+                JButton btnRealizadas = new JButton("Realizadas");
+                btnRealizadas.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        mostrarEvaluacionesRealizadas(asignacion);
+                    }
+                });
+                panelBotones.add(btnRealizadas);
+
                 // Botón de desasignar
                 JButton btnDesasignar = new JButton("Desasignar");
-                btnDesasignar.setBackground(new Color(220, 80, 80));
-                btnDesasignar.setForeground(Color.WHITE);
                 btnDesasignar.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         int confirmacion = JOptionPane.showConfirmDialog(
@@ -4812,6 +4821,470 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         JScrollPane scrollPane = new JScrollPane(panelPrincipal);
         ventanaEvaluaciones.add(scrollPane);
         ventanaEvaluaciones.setVisible(true);
+    }
+
+    // Método para mostrar las evaluaciones realizadas por los estudiantes
+    private void mostrarEvaluacionesRealizadas(EvaluacionAsignada asignacion) {
+        // Cargar las evaluaciones realizadas desde archivo
+        cargarEvaluacionesRealizadasDesdeArchivo();
+
+        JFrame ventanaRealizadas = new JFrame("Evaluaciones Realizadas");
+        ventanaRealizadas.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaRealizadas.setSize(800, 600);
+        ventanaRealizadas.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Resultados de Estudiantes");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Información de la evaluación
+        JLabel labelEvaluacion = new JLabel("Evaluación: " + asignacion.getEvaluacion().getNombre());
+        labelEvaluacion.setFont(new Font("Arial", Font.BOLD, 16));
+        labelEvaluacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelEvaluacion);
+
+        JLabel labelGrupo = new JLabel("Grupo: " + asignacion.getGrupo().getCurso().getNombre() +
+                                       " - Grupo " + asignacion.getGrupo().getIdentificacionGrupo());
+        labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+        labelGrupo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelGrupo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Filtrar evaluaciones realizadas para esta asignación
+        List<EvaluacionRealizada> evaluacionesFiltradas = new ArrayList<>();
+        for (EvaluacionRealizada realizada : evaluacionesRealizadas) {
+            EvaluacionAsignada asigRealizada = realizada.getEvaluacionAsignada();
+            // Comparar por identificación de evaluación y grupo
+            boolean coincide = asigRealizada.getEvaluacion().getIdentificacion() == asignacion.getEvaluacion().getIdentificacion() &&
+                               asigRealizada.getGrupo().getCurso().getIdentificacion().equals(asignacion.getGrupo().getCurso().getIdentificacion()) &&
+                               asigRealizada.getGrupo().getIdentificacionGrupo() == asignacion.getGrupo().getIdentificacionGrupo();
+
+            if (coincide && realizada.isFinalizada()) {
+                evaluacionesFiltradas.add(realizada);
+            }
+        }
+
+        if (evaluacionesFiltradas.isEmpty()) {
+            JLabel labelNoRealizada = new JLabel("Ningún estudiante ha realizado esta evaluación aún");
+            labelNoRealizada.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoRealizada.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoRealizada);
+        } else {
+            // Mostrar estadísticas
+            double sumaCalificaciones = 0;
+            double maxCalificacion = 0;
+            double minCalificacion = Double.MAX_VALUE;
+
+            for (EvaluacionRealizada realizada : evaluacionesFiltradas) {
+                double cal = realizada.getCalificacionObtenida();
+                sumaCalificaciones += cal;
+                if (cal > maxCalificacion) maxCalificacion = cal;
+                if (cal < minCalificacion) minCalificacion = cal;
+            }
+
+            double promedio = sumaCalificaciones / evaluacionesFiltradas.size();
+
+            JPanel panelEstadisticas = new JPanel();
+            panelEstadisticas.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+            panelEstadisticas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelEstadisticas.setBorder(BorderFactory.createTitledBorder("Estadísticas"));
+
+            JLabel labelTotal = new JLabel("Total: " + evaluacionesFiltradas.size());
+            JLabel labelPromedio = new JLabel(String.format("Promedio: %.2f", promedio));
+            JLabel labelMax = new JLabel(String.format("Máxima: %.2f", maxCalificacion));
+            JLabel labelMin = new JLabel(String.format("Mínima: %.2f", minCalificacion));
+
+            panelEstadisticas.add(labelTotal);
+            panelEstadisticas.add(labelPromedio);
+            panelEstadisticas.add(labelMax);
+            panelEstadisticas.add(labelMin);
+
+            panelPrincipal.add(panelEstadisticas);
+            panelPrincipal.add(Box.createVerticalStrut(15));
+
+            // Ordenar por calificación descendente
+            evaluacionesFiltradas.sort((e1, e2) -> Double.compare(e2.getCalificacionObtenida(), e1.getCalificacionObtenida()));
+
+            // Mostrar cada evaluación realizada
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+            for (EvaluacionRealizada realizada : evaluacionesFiltradas) {
+                JPanel panelEstudiante = new JPanel();
+                panelEstudiante.setLayout(new BoxLayout(panelEstudiante, BoxLayout.Y_AXIS));
+                panelEstudiante.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelEstudiante.setMaximumSize(new Dimension(700, 150));
+                panelEstudiante.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre del estudiante
+                JLabel labelEstudiante = new JLabel("Estudiante: " +
+                    realizada.getEstudiante().getNombre() + " " +
+                    realizada.getEstudiante().getApellido1() + " " +
+                    realizada.getEstudiante().getApellido2());
+                labelEstudiante.setFont(new Font("Arial", Font.BOLD, 14));
+                labelEstudiante.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelEstudiante);
+
+                // ID del estudiante
+                JLabel labelId = new JLabel("ID: " + realizada.getEstudiante().getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelId);
+                panelEstudiante.add(Box.createVerticalStrut(5));
+
+                // Calificación
+                JLabel labelCalificacion = new JLabel(String.format("Calificación: %.2f puntos",
+                    realizada.getCalificacionObtenida()));
+                labelCalificacion.setFont(new Font("Arial", Font.BOLD, 16));
+                labelCalificacion.setForeground(new Color(0, 120, 0));
+                labelCalificacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelCalificacion);
+
+                // Fechas
+                String fechaInicio = realizada.getFechaHoraInicio() != null ?
+                    sdf.format(realizada.getFechaHoraInicio()) : "N/A";
+                String fechaFin = realizada.getFechaHoraFin() != null ?
+                    sdf.format(realizada.getFechaHoraFin()) : "N/A";
+
+                JLabel labelFechas = new JLabel("Inicio: " + fechaInicio + " | Fin: " + fechaFin);
+                labelFechas.setFont(new Font("Arial", Font.PLAIN, 11));
+                labelFechas.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelFechas);
+                panelEstudiante.add(Box.createVerticalStrut(8));
+
+                // Botón para ver detalle
+                JButton btnVerDetalle = new JButton("Ver Respuestas Detalladas");
+                btnVerDetalle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnVerDetalle.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        mostrarDetalleEvaluacionRealizada(realizada);
+                    }
+                });
+                panelEstudiante.add(btnVerDetalle);
+
+                panelPrincipal.add(panelEstudiante);
+                panelPrincipal.add(Box.createVerticalStrut(10));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaRealizadas.dispose();
+            }
+        });
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaRealizadas.add(scrollPane);
+        ventanaRealizadas.setVisible(true);
+    }
+
+    // Método para mostrar el detalle de una evaluación realizada
+    private void mostrarDetalleEvaluacionRealizada(EvaluacionRealizada evaluacionRealizada) {
+        JFrame ventanaDetalle = new JFrame("Detalle de Respuestas");
+        ventanaDetalle.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaDetalle.setSize(900, 700);
+        ventanaDetalle.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Respuestas Detalladas");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Información del estudiante
+        JLabel labelEstudiante = new JLabel("Estudiante: " +
+            evaluacionRealizada.getEstudiante().getNombre() + " " +
+            evaluacionRealizada.getEstudiante().getApellido1() + " " +
+            evaluacionRealizada.getEstudiante().getApellido2());
+        labelEstudiante.setFont(new Font("Arial", Font.BOLD, 16));
+        labelEstudiante.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelEstudiante);
+
+        JLabel labelCalificacion = new JLabel(String.format("Calificación Final: %.2f puntos",
+            evaluacionRealizada.getCalificacionObtenida()));
+        labelCalificacion.setFont(new Font("Arial", Font.BOLD, 16));
+        labelCalificacion.setForeground(new Color(0, 120, 0));
+        labelCalificacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelCalificacion);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener las preguntas en el orden que fueron presentadas
+        List<Object> preguntasOrdenadas = evaluacionRealizada.getOrdenPreguntas();
+        Map<Integer, Object> respuestas = evaluacionRealizada.getRespuestas();
+
+        if (preguntasOrdenadas.isEmpty()) {
+            JLabel labelNoPreguntas = new JLabel("No hay información de preguntas disponible");
+            labelNoPreguntas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoPreguntas);
+        } else {
+            int numeroPregunta = 1;
+            for (Object pregunta : preguntasOrdenadas) {
+                JPanel panelPregunta = new JPanel();
+                panelPregunta.setLayout(new BoxLayout(panelPregunta, BoxLayout.Y_AXIS));
+                panelPregunta.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createTitledBorder("Pregunta " + numeroPregunta),
+                    BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                ));
+                panelPregunta.setAlignmentX(Component.CENTER_ALIGNMENT);
+                panelPregunta.setMaximumSize(new Dimension(800, Integer.MAX_VALUE));
+
+                Object respuestaEstudiante = respuestas.get(numeroPregunta - 1);
+
+                // Mostrar según el tipo de pregunta
+                if (pregunta instanceof SeleccionUnica) {
+                    SeleccionUnica su = (SeleccionUnica) pregunta;
+                    agregarDetalleSeleccionUnica(panelPregunta, su, respuestaEstudiante);
+                } else if (pregunta instanceof SeleccionMultiple) {
+                    SeleccionMultiple sm = (SeleccionMultiple) pregunta;
+                    agregarDetalleSeleccionMultiple(panelPregunta, sm, respuestaEstudiante);
+                } else if (pregunta instanceof FalsoVerdadero) {
+                    FalsoVerdadero fv = (FalsoVerdadero) pregunta;
+                    agregarDetalleFalsoVerdadero(panelPregunta, fv, respuestaEstudiante);
+                } else if (pregunta instanceof Pareo) {
+                    Pareo p = (Pareo) pregunta;
+                    agregarDetallePareo(panelPregunta, p, respuestaEstudiante);
+                } else if (pregunta instanceof Sopa) {
+                    Sopa s = (Sopa) pregunta;
+                    agregarDetalleSopa(panelPregunta, s, respuestaEstudiante);
+                }
+
+                panelPrincipal.add(panelPregunta);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+                numeroPregunta++;
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaDetalle.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaDetalle.add(scrollPane);
+        ventanaDetalle.setVisible(true);
+    }
+
+    // Métodos auxiliares para mostrar detalles de cada tipo de pregunta
+    private void agregarDetalleSeleccionUnica(JPanel panel, SeleccionUnica pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        String respuestaEstudiante = respuesta != null ? respuesta.toString() : "Sin responder";
+        String respuestaCorrecta = pregunta.getRespuesta();
+        boolean esCorrecta = respuestaEstudiante.equals(respuestaCorrecta);
+
+        JLabel labelRespuestaEst = new JLabel("<html><b>Respuesta del estudiante:</b> " + respuestaEstudiante + "</html>");
+        labelRespuestaEst.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelRespuestaEst.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaEst);
+
+        JLabel labelRespuestaCorr = new JLabel("<html><b>Respuesta correcta:</b> " + respuestaCorrecta + "</html>");
+        labelRespuestaCorr.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelRespuestaCorr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaCorr);
+
+        JLabel labelResultado = new JLabel(esCorrecta ? "✓ CORRECTA" : "✗ INCORRECTA");
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetalleSeleccionMultiple(JPanel panel, SeleccionMultiple pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        List<String> respuestasEstudiante = respuesta != null ? (List<String>) respuesta : new ArrayList<>();
+        List<String> respuestasCorrectas = pregunta.getRespuesta();
+
+        boolean esCorrecta = respuestasEstudiante.size() == respuestasCorrectas.size() &&
+                            respuestasEstudiante.containsAll(respuestasCorrectas);
+
+        JLabel labelRespuestaEst = new JLabel("<html><b>Respuestas del estudiante:</b> " +
+            String.join(", ", respuestasEstudiante) + "</html>");
+        labelRespuestaEst.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelRespuestaEst.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaEst);
+
+        JLabel labelRespuestaCorr = new JLabel("<html><b>Respuestas correctas:</b> " +
+            String.join(", ", respuestasCorrectas) + "</html>");
+        labelRespuestaCorr.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelRespuestaCorr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaCorr);
+
+        JLabel labelResultado = new JLabel(esCorrecta ? "✓ CORRECTA" : "✗ INCORRECTA");
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetalleFalsoVerdadero(JPanel panel, FalsoVerdadero pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        String respuestaEstudiante = respuesta != null ? respuesta.toString() : "Sin responder";
+        String respuestaCorrecta = pregunta.getRespuesta();
+        boolean esCorrecta = respuestaEstudiante.equals(respuestaCorrecta);
+
+        JLabel labelRespuestaEst = new JLabel("<html><b>Respuesta del estudiante:</b> " + respuestaEstudiante + "</html>");
+        labelRespuestaEst.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelRespuestaEst.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaEst);
+
+        JLabel labelRespuestaCorr = new JLabel("<html><b>Respuesta correcta:</b> " + respuestaCorrecta + "</html>");
+        labelRespuestaCorr.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelRespuestaCorr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaCorr);
+
+        JLabel labelResultado = new JLabel(esCorrecta ? "✓ CORRECTA" : "✗ INCORRECTA");
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetallePareo(JPanel panel, Pareo pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        Map<Integer, Integer> respuestasEstudiante = respuesta != null ? (Map<Integer, Integer>) respuesta : new HashMap<>();
+        Map<Integer, Integer> respuestasCorrectas = pregunta.getRelacionesCorrectas();
+
+        double puntosObtenidos = pregunta.calificar(respuestasEstudiante);
+
+        JLabel labelInfo = new JLabel("Emparejamientos:");
+        labelInfo.setFont(new Font("Arial", Font.BOLD, 12));
+        labelInfo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelInfo);
+        panel.add(Box.createVerticalStrut(5));
+
+        List<String> col1 = pregunta.getColumna1();
+        List<String> col2 = pregunta.getColumna2();
+
+        for (int i = 0; i < col1.size(); i++) {
+            Integer respEst = respuestasEstudiante.get(i);
+            Integer respCorr = respuestasCorrectas.get(i);
+
+            String textoRespEst = respEst != null && respEst < col2.size() ? col2.get(respEst) : "Sin responder";
+            String textoRespCorr = respCorr != null && respCorr < col2.size() ? col2.get(respCorr) : "N/A";
+
+            boolean correcta = respEst != null && respEst.equals(respCorr);
+
+            JLabel labelEmparejamiento = new JLabel(String.format("<html>%s → <b>%s</b> (Correcta: %s) %s</html>",
+                col1.get(i), textoRespEst, textoRespCorr, correcta ? "✓" : "✗"));
+            labelEmparejamiento.setForeground(correcta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+            labelEmparejamiento.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(labelEmparejamiento);
+        }
+
+        panel.add(Box.createVerticalStrut(5));
+        JLabel labelResultado = new JLabel(String.format("Puntos obtenidos: %.2f / %d", puntosObtenidos, pregunta.getPuntos()));
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(new Color(0, 100, 150));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetalleSopa(JPanel panel, Sopa pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        List<String> palabrasEncontradas = respuesta != null ? (List<String>) respuesta : new ArrayList<>();
+        List<String> palabrasCorrectas = pregunta.getPalabras();
+
+        double puntosObtenidos = pregunta.calificar(palabrasEncontradas);
+
+        int encontradas = 0;
+        for (String palabra : palabrasCorrectas) {
+            boolean encontrada = palabrasEncontradas.contains(palabra.toUpperCase());
+            if (encontrada) encontradas++;
+        }
+
+        JLabel labelInfo = new JLabel(String.format("Palabras encontradas: %d / %d", encontradas, palabrasCorrectas.size()));
+        labelInfo.setFont(new Font("Arial", Font.BOLD, 12));
+        labelInfo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelInfo);
+        panel.add(Box.createVerticalStrut(5));
+
+        for (String palabra : palabrasCorrectas) {
+            boolean encontrada = palabrasEncontradas.contains(palabra.toUpperCase());
+            JLabel labelPalabra = new JLabel(palabra + " " + (encontrada ? "✓" : "✗"));
+            labelPalabra.setForeground(encontrada ? new Color(0, 120, 0) : new Color(180, 0, 0));
+            labelPalabra.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(labelPalabra);
+        }
+
+        panel.add(Box.createVerticalStrut(5));
+        JLabel labelResultado = new JLabel(String.format("Puntos obtenidos: %.2f / %d", puntosObtenidos, pregunta.getPuntos()));
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(new Color(0, 100, 150));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
     }
 
     private void abrirVentanaProfesores(Profesores profesor) {
