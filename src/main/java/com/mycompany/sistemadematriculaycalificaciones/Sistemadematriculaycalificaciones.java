@@ -7,6 +7,8 @@ package com.mycompany.sistemadematriculaycalificaciones;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -19,6 +21,11 @@ import javax.mail.MessagingException;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
 import java.util.Random;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 public class Sistemadematriculaycalificaciones extends JFrame {
     
@@ -31,9 +38,11 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         
         
         //Se inician los archivos
-        cargarEstudiantesDesdeArchivo();
-        cargarProfesoresDesdeArchivo();
-        cargarCursosDesdeArchivo();
+        estudiantes = GestorArchivos.cargarEstudiantes();
+        profesores = GestorArchivos.cargarProfesores();
+        cursos = GestorArchivos.cargarCursos();
+        evaluacionesAsignadas = GestorArchivos.cargarEvaluacionesAsignadas();
+        evaluacionesRealizadas = GestorArchivos.cargarEvaluacionesRealizadas();
         // Crear componentes
         crearInterfaz();
     }
@@ -139,114 +148,43 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     }
     
-    //Manejo de archivos
+    //Manejo de archivos - Usando GestorArchivos
     //Estudiantes
     private java.util.List<Estudiantes> estudiantes = new java.util.ArrayList<>();
     private Estudiantes estudianteAutenticado; // Usuario estudiante autenticado
-    private static final String ARCHIVO_ESTUDIANTES = "estudiantes.dat";
-    //Función para guardar la info en un archivo.
-    private void guardarEstudiantesEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_ESTUDIANTES))) {
-        oos.writeObject(estudiantes);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de estudiantes.
-    private void cargarEstudiantesDesdeArchivo() {
-    File archivo = new File(ARCHIVO_ESTUDIANTES);
-    if (!archivo.exists()) {
-        estudiantes = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_ESTUDIANTES));
-        estudiantes = (List<Estudiantes>) ois.readObject();
-        ois.close();
-        
-    } catch (IOException | ClassNotFoundException e) {
-        JOptionPane.showMessageDialog(null, "Error al cargar estudiantes: " + e.getMessage());
-        estudiantes = new ArrayList<>();
-    }
-    }
+    private String codigoVerificacionEstudiante; // Código de verificación para recuperación
+
     //Profesores
     private java.util.List<Profesores> profesores = new java.util.ArrayList<>();
     private Profesores profesorAutenticado; // Usuario profesor autenticado
-    private static final String ARCHIVO_PROFESORES = "profesores.dat";
-    //Función para guardar la info en un archivo.
-    private void guardarProfesoresEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_PROFESORES))) {
-        oos.writeObject(profesores);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de profesores.
-    private void cargarProfesoresDesdeArchivo() {
-    File archivo = new File(ARCHIVO_PROFESORES);
-    if (!archivo.exists()) {
-        profesores = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_PROFESORES));
-        profesores = (List<Profesores>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        profesores = new ArrayList<>();
-    }
-    }
+    private String codigoVerificacionProfesor; // Código de verificación para recuperación
+
     //Cursos
     private java.util.List<Cursos> cursos = new java.util.ArrayList<>();
-    private static final String ARCHIVO_CURSOS = "cursos.dat";
-    //Función para guardar la info en un archivo.
-    private void guardarCursosEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_CURSOS))) {
-        oos.writeObject(cursos);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de cursos.
-    private void cargarCursosDesdeArchivo() {
-    File archivo = new File(ARCHIVO_CURSOS);
-    if (!archivo.exists()) {
-        cursos = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_CURSOS));
-        cursos = (List<Cursos>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        cursos = new ArrayList<>();
-    }
-    }
+
     //Evaluaciones
     private java.util.List<Evaluaciones> evaluaciones = new java.util.ArrayList<>();
-    private static final String ARCHIVO_EVALUACIONES = "evaluaciones.dat";
-    
-    private void guardarEvaluacionesEnArchivo() {
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_EVALUACIONES))) {
-        oos.writeObject(evaluaciones);
-    } catch (IOException e) {
-    }
-    }
-    //Función para cargar la información del archivo de cursos.
-    private void cargarEvaluacionesDesdeArchivo() {
-    File archivo = new File(ARCHIVO_EVALUACIONES);
-    if (!archivo.exists()) {
-        evaluaciones = new ArrayList<>();
-        return;
-    }
-    
-    try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_EVALUACIONES));
-        evaluaciones = (List<Evaluaciones>) ois.readObject();
-        ois.close();
-    } catch (IOException | ClassNotFoundException e) {
-        evaluaciones = new ArrayList<>();
-    }
+
+    //Evaluaciones Asignadas
+    private java.util.List<EvaluacionAsignada> evaluacionesAsignadas = new java.util.ArrayList<>();
+
+    //Evaluaciones Realizadas
+    private java.util.List<EvaluacionRealizada> evaluacionesRealizadas = new java.util.ArrayList<>();
+
+    // Getters públicos para acceso desde otras clases
+    public List<Estudiantes> getEstudiantes() { return estudiantes; }
+    public List<Profesores> getProfesores() { return profesores; }
+    public List<Cursos> getCursos() { return cursos; }
+    public List<Evaluaciones> getEvaluaciones() { return evaluaciones; }
+    public List<EvaluacionAsignada> getEvaluacionesAsignadas() { return evaluacionesAsignadas; }
+    public List<EvaluacionRealizada> getEvaluacionesRealizadas() { return evaluacionesRealizadas; }
+
+    // Método público para agregar evaluación realizada y guardar
+    public void agregarEvaluacionRealizada(EvaluacionRealizada evaluacionRealizada) {
+        if (evaluacionRealizada != null) {
+            evaluacionesRealizadas.add(evaluacionRealizada);
+            GestorArchivos.guardarEvaluacionesRealizadas(evaluacionesRealizadas);
+        }
     }
 
     private void registrarEstudiante(JTextField txtNom, JTextField txtApel1, JTextField txtApel2,
@@ -292,7 +230,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
             return;
         }
         estudiantes.add(nuevoEstudiante);
-        guardarEstudiantesEnArchivo();//Si no hay errores y el programa sigue entonces se guarda.
+        GestorArchivos.guardarEstudiantes(estudiantes);//Si no hay errores y el programa sigue entonces se guarda.
         limpiarCampos(txtNom, txtApel1, txtApel2, txtIdent, txtTelefono, 
               txtCorreo, txtDirec, txtOrganizacion, txtTemasInteres, txtContraseña);  
         try {
@@ -395,7 +333,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 return;
             }
             
-            guardarEstudiantesEnArchivo();
+            GestorArchivos.guardarEstudiantes(estudiantes);
             try {
             enviarCorreo(
             est.getCorreo(),
@@ -438,7 +376,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 System.out.println("No se pudo enviar correo: " + e.getMessage());
             }
             estudiantes.remove(est);
-            guardarEstudiantesEnArchivo();
+            GestorArchivos.guardarEstudiantes(estudiantes);
            limpiarCampos(txtNom, txtApel1, txtApel2, txtIdent, txtTelefono, 
               txtCorreo, txtDirec, txtOrganizacion, txtTemasInteres, txtContraseña); 
             return;
@@ -712,7 +650,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     }
     
     profesores.add(nuevoProfesor);
-    guardarProfesoresEnArchivo();
+    GestorArchivos.guardarProfesores(profesores);
     try {
         enviarCorreo(
         nuevoProfesor.getCorreo(),
@@ -826,7 +764,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 return;
             }
             
-            guardarProfesoresEnArchivo();
+            GestorArchivos.guardarProfesores(profesores);
             try {
                 enviarCorreo(
                 prof.getCorreo(),
@@ -869,7 +807,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 System.out.println("No se pudo enviar correo: " + e.getMessage());
             }
             profesores.remove(prof);
-            guardarProfesoresEnArchivo();
+            GestorArchivos.guardarProfesores(profesores);
             limpiarCampos(txtNom, txtApel1, txtApel2, txtIdent, txtTelefono, 
                          txtCorreo, txtDirec, txtTitulos, txtCertificaciones, txtContraseña);
             return;
@@ -1175,7 +1113,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     }
     
     cursos.add(nuevoCurso);
-    guardarCursosEnArchivo();
+    GestorArchivos.guardarCursos(cursos);
     limpiarCamposCursos(txtIdentCur, txtNomCurso, txtDescCur, txtCantHoras, txtEstuMini, 
                        txtEstuMax, txtCaliMini, comboModalidad, comboTipoCurso);
     
@@ -1299,7 +1237,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 return;
             }
             
-            guardarCursosEnArchivo();
+            GestorArchivos.guardarCursos(cursos);
             JOptionPane.showMessageDialog(null, "Curso modificado exitosamente");
             return;
         }
@@ -1321,7 +1259,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     for (Cursos curso : cursos) {
         if (curso.getIdentificacion().equals(identificacion)) {
             cursos.remove(curso);
-            guardarCursosEnArchivo();
+            GestorArchivos.guardarCursos(cursos);
             limpiarCamposCursos(txtIdentCur, txtNomCurso, txtDescCur, txtCantHoras, txtEstuMini, 
                                txtEstuMax, txtCaliMini, comboModalidad, comboTipoCurso);
             return;
@@ -1601,7 +1539,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     // Asignar grupo al curso
         cursoEncontrado.agregarGrupo(nuevoGrupo);
-        guardarCursosEnArchivo();
+        GestorArchivos.guardarCursos(cursos);
         
         
         // Limpiar campos
@@ -1776,15 +1714,20 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     
     //Finalmente si todo sale bien entonces se guarda el profesor, y se guarda e archivo.
     String resultado = grupoEncontrado.asignarProfesor(profesorEncontrado);
-    
+
     if (resultado == null) {
         // Éxito
-        guardarCursosEnArchivo(); // Guardar cambios
+        GestorArchivos.guardarCursos(cursos); // Guardar cambios en cursos
+        GestorArchivos.guardarProfesores(profesores); // Guardar cambios en profesores (para actualizar gruposImpartiendo)
+        JOptionPane.showMessageDialog(ventana, "Profesor asignado exitosamente al grupo", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         // Limpiar campos
         txtIdentCur.setText("");
         txtIdentGru.setText("");
         txtIdentPro.setText("");
-    } 
+    } else {
+        // Mostrar el error devuelto por asignarProfesor
+        JOptionPane.showMessageDialog(ventana, resultado, "Error", JOptionPane.ERROR_MESSAGE);
+    }
 }
     private void ventanaAsociarProfesoresGrupos() {
         // Cerrar ventana actual
@@ -1881,9 +1824,9 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     private void abrirVentanaAdministradores() {
         // Cerrar ventana actual
         this.dispose();
-        cargarEstudiantesDesdeArchivo();
-        cargarProfesoresDesdeArchivo();
-        cargarCursosDesdeArchivo();
+        estudiantes = GestorArchivos.cargarEstudiantes();
+        profesores = GestorArchivos.cargarProfesores();
+        cursos = GestorArchivos.cargarCursos();
         
         // Crear nueva ventana
         JFrame ventanaAdministradores = new JFrame("Ventana de Administradores");
@@ -1946,6 +1889,13 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                 ventanaAsociarProfesoresGrupos();
             }
         });
+        JButton btnReportes = new JButton("Reportes");
+        btnReportes.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaAdministradores.dispose();
+                mostrarVentanaReportesAdministrador();
+            }
+        });
         // Panel para el botón
         JPanel panelBoton = new JPanel();
         panelBoton.setLayout(new BoxLayout(panelBoton, BoxLayout.Y_AXIS));
@@ -1956,20 +1906,23 @@ public class Sistemadematriculaycalificaciones extends JFrame {
         btnCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAsoCur.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnAsoPro.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnReportes.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnVolver1.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Agregar los botones con espacios
-        panelBoton.add(Box.createVerticalStrut(30)); // Empuja los botones al centro
+        panelBoton.add(Box.createVerticalStrut(20)); // Empuja los botones al centro
         panelBoton.add(btnEstudiantes);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnProfesores);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnCursos);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnAsoCur);
-        panelBoton.add(Box.createVerticalStrut(15));
+        panelBoton.add(Box.createVerticalStrut(12));
         panelBoton.add(btnAsoPro);
-        panelBoton.add(Box.createVerticalStrut(25));
+        panelBoton.add(Box.createVerticalStrut(12));
+        panelBoton.add(btnReportes);
+        panelBoton.add(Box.createVerticalStrut(20));
         panelBoton.add(btnVolver1);
         panelBoton.add(Box.createVerticalGlue()); // Empuja los botones al centro
 
@@ -2426,10 +2379,411 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     dialog.setVisible(true);
     return preguntaCreada[0];
     }
+
+    // Método para ventana de Pareo
+    private Pareo ventanaPareo(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar Pregunta de Pareo", true);
+    dialog.setSize(600, 700);
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(2, 30);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(500, 60));
+
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+
+    // 3. COLUMNA 1 (Enunciados)
+    JLabel lblCol1 = new JLabel("Columna 1 - Enunciados:");
+    lblCol1.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelCol1 = new DefaultListModel<>();
+    JList<String> listaCol1 = new JList<>(modelCol1);
+    JScrollPane scrollCol1 = new JScrollPane(listaCol1);
+    scrollCol1.setMaximumSize(new Dimension(500, 100));
+
+    JPanel panelAgregarCol1 = new JPanel();
+    panelAgregarCol1.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JTextField txtItemCol1 = new JTextField(25);
+    JButton btnAgregarCol1 = new JButton("Agregar");
+    btnAgregarCol1.addActionListener(e -> {
+        String item = txtItemCol1.getText().trim();
+        if (!item.isEmpty()) {
+            modelCol1.addElement(item);
+            txtItemCol1.setText("");
+        }
+    });
+    panelAgregarCol1.add(txtItemCol1);
+    panelAgregarCol1.add(btnAgregarCol1);
+
+    // 4. COLUMNA 2 (Respuestas/Distractores)
+    JLabel lblCol2 = new JLabel("Columna 2 - Respuestas/Distractores:");
+    lblCol2.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelCol2 = new DefaultListModel<>();
+    JList<String> listaCol2 = new JList<>(modelCol2);
+    JScrollPane scrollCol2 = new JScrollPane(listaCol2);
+    scrollCol2.setMaximumSize(new Dimension(500, 100));
+
+    JPanel panelAgregarCol2 = new JPanel();
+    panelAgregarCol2.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JTextField txtItemCol2 = new JTextField(25);
+    JButton btnAgregarCol2 = new JButton("Agregar");
+    btnAgregarCol2.addActionListener(e -> {
+        String item = txtItemCol2.getText().trim();
+        if (!item.isEmpty()) {
+            modelCol2.addElement(item);
+            txtItemCol2.setText("");
+        }
+    });
+    panelAgregarCol2.add(txtItemCol2);
+    panelAgregarCol2.add(btnAgregarCol2);
+
+    // 5. RELACIONES
+    JLabel lblRelaciones = new JLabel("Relaciones correctas (índice Col1 -> índice Col2):");
+    lblRelaciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelRelaciones = new DefaultListModel<>();
+    JList<String> listaRelaciones = new JList<>(modelRelaciones);
+    JScrollPane scrollRelaciones = new JScrollPane(listaRelaciones);
+    scrollRelaciones.setMaximumSize(new Dimension(500, 80));
+
+    JPanel panelAgregarRelacion = new JPanel();
+    panelAgregarRelacion.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JLabel lblIndice1 = new JLabel("Col1:");
+    JTextField txtIndice1 = new JTextField(3);
+    JLabel lblIndice2 = new JLabel("-> Col2:");
+    JTextField txtIndice2 = new JTextField(3);
+    JButton btnAgregarRelacion = new JButton("Agregar Relación");
+    btnAgregarRelacion.addActionListener(e -> {
+        String idx1 = txtIndice1.getText().trim();
+        String idx2 = txtIndice2.getText().trim();
+        if (!idx1.isEmpty() && !idx2.isEmpty()) {
+            modelRelaciones.addElement(idx1 + " -> " + idx2);
+            txtIndice1.setText("");
+            txtIndice2.setText("");
+        }
+    });
+    panelAgregarRelacion.add(lblIndice1);
+    panelAgregarRelacion.add(txtIndice1);
+    panelAgregarRelacion.add(lblIndice2);
+    panelAgregarRelacion.add(txtIndice2);
+    panelAgregarRelacion.add(btnAgregarRelacion);
+
+    // 6. ORDEN ALEATORIO
+    JCheckBox chkOrdenAleatorio = new JCheckBox("Orden aleatorio");
+    chkOrdenAleatorio.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+
+    final Pareo[] preguntaCreada = {null};
+
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+
+        // Convertir las listas a List<String>
+        List<String> col1 = new ArrayList<>();
+        for (int i = 0; i < modelCol1.size(); i++) {
+            col1.add(modelCol1.getElementAt(i));
+        }
+
+        List<String> col2 = new ArrayList<>();
+        for (int i = 0; i < modelCol2.size(); i++) {
+            col2.add(modelCol2.getElementAt(i));
+        }
+
+        // Convertir relaciones
+        java.util.Map<Integer, Integer> relaciones = new java.util.HashMap<>();
+        for (int i = 0; i < modelRelaciones.size(); i++) {
+            String rel = modelRelaciones.getElementAt(i);
+            String[] partes = rel.split(" -> ");
+            if (partes.length == 2) {
+                try {
+                    int idx1 = Integer.parseInt(partes[0].trim());
+                    int idx2 = Integer.parseInt(partes[1].trim());
+                    relaciones.put(idx1, idx2);
+                } catch (NumberFormatException ex) {
+                    // Ignorar relaciones inválidas
+                }
+            }
+        }
+
+        // Crear pregunta
+        Pareo pareo = new Pareo(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            col1,
+            col2,
+            relaciones,
+            chkOrdenAleatorio.isSelected()
+        );
+
+        // Validar
+        String error = pareo.validar();
+        if (error != null) {
+            JOptionPane.showMessageDialog(dialog, error);
+            return;
+        }
+
+        preguntaCreada[0] = pareo;
+        if (preguntaCreada[0] != null) {
+            evalActual.agregarPareo(preguntaCreada[0]);
+            actualizarListaPreguntas(evalActual, listaPreg);
+        }
+        dialog.dispose();
+    });
+
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblCol1);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollCol1);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarCol1);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblCol2);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollCol2);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarCol2);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblRelaciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollRelaciones);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarRelacion);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(chkOrdenAleatorio);
+    panel.add(Box.createVerticalStrut(15));
+
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+
+    JScrollPane scrollPanel = new JScrollPane(panel);
+    dialog.add(scrollPanel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+
+    // Método para ventana de Sopa de Letras
+    private Sopa ventanaSopa(JFrame parent, Evaluaciones evalActual, JList<String> listaPreg) {
+    JDialog dialog = new JDialog(parent, "Agregar Sopa de Letras", true);
+    dialog.setSize(550, 600);
+    dialog.setLocationRelativeTo(parent);
+    dialog.setLayout(new BorderLayout());
+
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+    // 1. DESCRIPCIÓN
+    JLabel lblDesc = new JLabel("Descripción de la pregunta:");
+    lblDesc.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextArea txtDesc = new JTextArea(2, 30);
+    txtDesc.setLineWrap(true);
+    txtDesc.setWrapStyleWord(true);
+    JScrollPane scrollDesc = new JScrollPane(txtDesc);
+    scrollDesc.setMaximumSize(new Dimension(450, 60));
+
+    // 2. PUNTOS
+    JLabel lblPuntos = new JLabel("Puntos que vale la pregunta:");
+    lblPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+    JTextField txtPuntos = new JTextField();
+    txtPuntos.setMaximumSize(new Dimension(100, 25));
+
+    // 3. PALABRAS A BUSCAR (mínimo 10)
+    JLabel lblPalabras = new JLabel("Palabras a buscar (mínimo 10):");
+    lblPalabras.setAlignmentX(Component.LEFT_ALIGNMENT);
+    DefaultListModel<String> modelPalabras = new DefaultListModel<>();
+    JList<String> listaPalabras = new JList<>(modelPalabras);
+    JScrollPane scrollPalabras = new JScrollPane(listaPalabras);
+    scrollPalabras.setMaximumSize(new Dimension(450, 200));
+
+    JPanel panelAgregarPalabra = new JPanel();
+    panelAgregarPalabra.setLayout(new FlowLayout(FlowLayout.LEFT));
+    JTextField txtPalabra = new JTextField(20);
+    JButton btnAgregarPalabra = new JButton("Agregar Palabra");
+    JButton btnEliminarPalabra = new JButton("Eliminar");
+
+    btnAgregarPalabra.addActionListener(e -> {
+        String palabra = txtPalabra.getText().trim();
+        if (!palabra.isEmpty()) {
+            modelPalabras.addElement(palabra.toUpperCase());
+            txtPalabra.setText("");
+        }
+    });
+
+    btnEliminarPalabra.addActionListener(e -> {
+        int selectedIndex = listaPalabras.getSelectedIndex();
+        if (selectedIndex != -1) {
+            modelPalabras.remove(selectedIndex);
+        }
+    });
+
+    panelAgregarPalabra.add(txtPalabra);
+    panelAgregarPalabra.add(btnAgregarPalabra);
+    panelAgregarPalabra.add(btnEliminarPalabra);
+
+    // 4. ORDEN ALEATORIO
+    JCheckBox chkOrdenAleatorio = new JCheckBox("Generar con posiciones aleatorias");
+    chkOrdenAleatorio.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // Contador de palabras
+    JLabel lblContador = new JLabel("Palabras agregadas: 0");
+    lblContador.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // Actualizar contador cuando se agregue o elimine
+    btnAgregarPalabra.addActionListener(e -> {
+        lblContador.setText("Palabras agregadas: " + modelPalabras.size());
+    });
+    btnEliminarPalabra.addActionListener(e -> {
+        lblContador.setText("Palabras agregadas: " + modelPalabras.size());
+    });
+
+    // BOTONES
+    JPanel panelBotones = new JPanel();
+    JButton btnGuardar = new JButton("Guardar");
+    JButton btnCancelar = new JButton("Cancelar");
+
+    final Sopa[] preguntaCreada = {null};
+
+    // ACTION LISTENERS
+    btnGuardar.addActionListener(e -> {
+        // Validaciones
+        if (txtDesc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(dialog, "Por favor digite una descripción");
+            return;
+        }
+        if (!esNumero(txtPuntos.getText().trim()) || Integer.parseInt(txtPuntos.getText().trim()) < 1) {
+            JOptionPane.showMessageDialog(dialog, "Los puntos deben ser un número mayor a 0");
+            return;
+        }
+
+        // Convertir las palabras a List<String>
+        List<String> palabras = new ArrayList<>();
+        for (int i = 0; i < modelPalabras.size(); i++) {
+            palabras.add(modelPalabras.getElementAt(i));
+        }
+
+        if (palabras.size() < 10) {
+            JOptionPane.showMessageDialog(dialog, "Debe agregar al menos 10 palabras");
+            return;
+        }
+
+        // Crear pregunta
+        Sopa sopa = new Sopa(
+            txtDesc.getText().trim(),
+            Integer.parseInt(txtPuntos.getText().trim()),
+            palabras,
+            chkOrdenAleatorio.isSelected()
+        );
+
+        // Validar
+        String error = sopa.validar();
+        if (error != null) {
+            JOptionPane.showMessageDialog(dialog, error);
+            return;
+        }
+
+        // Generar la sopa de letras
+        boolean generada = sopa.generarSopa();
+        if (!generada) {
+            JOptionPane.showMessageDialog(dialog, "Error al generar la sopa de letras");
+            return;
+        }
+
+        preguntaCreada[0] = sopa;
+        if (preguntaCreada[0] != null) {
+            evalActual.agregarSopa(preguntaCreada[0]);
+            actualizarListaPreguntas(evalActual, listaPreg);
+            JOptionPane.showMessageDialog(dialog, "Sopa de letras creada exitosamente!");
+        }
+        dialog.dispose();
+    });
+
+    btnCancelar.addActionListener(e -> {
+        dialog.dispose();
+    });
+
+    // AGREGAR COMPONENTES
+    panel.add(lblDesc);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollDesc);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblPuntos);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(txtPuntos);
+    panel.add(Box.createVerticalStrut(15));
+
+    panel.add(lblPalabras);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(scrollPalabras);
+    panel.add(Box.createVerticalStrut(5));
+    panel.add(panelAgregarPalabra);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(lblContador);
+    panel.add(Box.createVerticalStrut(10));
+
+    panel.add(chkOrdenAleatorio);
+    panel.add(Box.createVerticalStrut(15));
+
+    panelBotones.add(btnGuardar);
+    panelBotones.add(btnCancelar);
+
+    JScrollPane scrollPanel = new JScrollPane(panel);
+    dialog.add(scrollPanel, BorderLayout.CENTER);
+    dialog.add(panelBotones, BorderLayout.SOUTH);
+
+    dialog.setVisible(true);
+    return preguntaCreada[0];
+    }
+
     private void limpiarCamposEvaluacion(JTextField txtIdentEva, JTextField txtNomEva,
-                                   JTextField txtInstru, JTextField txtObjeti, 
+                                   JTextField txtInstru, JTextField txtObjeti,
                                    JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
-                                   JComboBox<String> comboRespuestAlea, JList<String> listaPreg, 
+                                   JComboBox<String> comboRespuestAlea, JList<String> listaPreg,
                                    Evaluaciones evaluacionActual) {
     txtIdentEva.setText("");
     txtNomEva.setText("");
@@ -2545,7 +2899,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
     evaluaciones.add(nuevaEvaluacion);
     
     
-    guardarEvaluacionesEnArchivo();
+    GestorArchivos.guardarEvaluaciones(evaluaciones);
     
     
     
@@ -2558,7 +2912,7 @@ public class Sistemadematriculaycalificaciones extends JFrame {
                                 JTextField txtInstru, JTextField txtObjeti, 
                                 JTextField txtDuracion, JComboBox<String> comboPreguntAlea,
                                 JComboBox<String> comboRespuestAlea, JScrollPane scrollPreguntas) {
-    cargarEvaluacionesDesdeArchivo();
+    evaluaciones = GestorArchivos.cargarEvaluaciones();
     
     
     // Validar que la identificación no esté vacía
@@ -2646,7 +3000,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                                Evaluaciones evaluacionActual) {
     
     // Cargar evaluaciones actuales
-    cargarEvaluacionesDesdeArchivo();
+    evaluaciones = GestorArchivos.cargarEvaluaciones();
     
     // Se valida que la identificación no este vacia.
     if (txtIdentEva.getText().trim().isEmpty()) {
@@ -2678,7 +3032,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     
     // Eliminar la evaluación
     evaluaciones.remove(evaluacionEncontrada);
-    guardarEvaluacionesEnArchivo();
+    GestorArchivos.guardarEvaluaciones(evaluaciones);
     
     limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
                            comboPreguntAlea, comboRespuestAlea, listaPreg, evaluacionActual);
@@ -2692,7 +3046,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
                                 Evaluaciones evaluacionActual) {
     
     // Cargar evaluaciones actuales
-    cargarEvaluacionesDesdeArchivo();
+    evaluaciones = GestorArchivos.cargarEvaluaciones();
     
     // Validar que la identificación no esté vacía
     if (txtIdentEva.getText().trim().isEmpty()) {
@@ -2780,7 +3134,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     
     // Reemplazar la evaluación antigua con la actualizada
     evaluaciones.set(indiceEncontrado, evaluacionActualizada);
-    guardarEvaluacionesEnArchivo();
+    GestorArchivos.guardarEvaluaciones(evaluaciones);
     limpiarCamposEvaluacion(txtIdentEva, txtNomEva, txtInstru, txtObjeti, txtDuracion, 
                            comboPreguntAlea, comboRespuestAlea, listaPreg, evaluacionActual);
     
@@ -2927,7 +3281,13 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaFalsoVerdadero(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
         });
         JButton btnAgregarPareo = new JButton("Pareo");
-        JButton btnAgregarSopa = new JButton("Sopa");
+        btnAgregarPareo.addActionListener(e -> {
+        ventanaPareo(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
+        JButton btnAgregarSopa = new JButton("Sopa de Letras");
+        btnAgregarSopa.addActionListener(e -> {
+        ventanaSopa(ventanaEvaluaciones, evaluacionActual, listaPreguntas);
+        });
         // Botones de operaciones CRUD (en parejas)
         JButton btnRegistrar = new JButton("Registrar");
         btnRegistrar.addActionListener(new ActionListener() {
@@ -3215,6 +3575,294 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         ventanaInfo.setVisible(true);
     }
 
+    private String generarCodigoVerificacion() {
+        Random random = new Random();
+        int codigo = 100000 + random.nextInt(900000); // Genera número entre 100000 y 999999
+        return String.valueOf(codigo);
+    }
+
+    private void recuperarContrasenaEstudiante() {
+        // Solicitar correo
+        String correo = JOptionPane.showInputDialog(null,
+            "Ingrese su correo electrónico:",
+            "Recuperar Contraseña",
+            JOptionPane.QUESTION_MESSAGE);
+
+        if (correo == null || correo.trim().isEmpty()) {
+            return;
+        }
+
+        // Buscar estudiante por correo
+        Estudiantes estudianteEncontrado = null;
+        for (Estudiantes est : estudiantes) {
+            if (est.getCorreo().equalsIgnoreCase(correo.trim())) {
+                estudianteEncontrado = est;
+                break;
+            }
+        }
+
+        if (estudianteEncontrado == null) {
+            JOptionPane.showMessageDialog(null,
+                "No se encontró ningún estudiante con ese correo",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Generar código
+        codigoVerificacionEstudiante = generarCodigoVerificacion();
+
+        // Enviar código por correo
+        try {
+            enviarCorreoConCodigo(estudianteEncontrado.getCorreo(),
+                estudianteEncontrado.getNombre(),
+                codigoVerificacionEstudiante);
+
+            JOptionPane.showMessageDialog(null,
+                "Se ha enviado un código de verificación a su correo",
+                "Código Enviado",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Solicitar código
+            String codigoIngresado = JOptionPane.showInputDialog(null,
+                "Ingrese el código de verificación que recibió por correo:",
+                "Verificación",
+                JOptionPane.QUESTION_MESSAGE);
+
+            if (codigoIngresado == null || !codigoIngresado.equals(codigoVerificacionEstudiante)) {
+                JOptionPane.showMessageDialog(null,
+                    "Código incorrecto",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Mostrar ventana para cambiar contraseña
+            mostrarVentanaCambiarContrasena(estudianteEncontrado, true);
+
+        } catch (MessagingException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al enviar el correo: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void recuperarContrasenaProfesor() {
+        // Solicitar correo
+        String correo = JOptionPane.showInputDialog(null,
+            "Ingrese su correo electrónico:",
+            "Recuperar Contraseña",
+            JOptionPane.QUESTION_MESSAGE);
+
+        if (correo == null || correo.trim().isEmpty()) {
+            return;
+        }
+
+        // Buscar profesor por correo
+        Profesores profesorEncontrado = null;
+        for (Profesores prof : profesores) {
+            if (prof.getCorreo().equalsIgnoreCase(correo.trim())) {
+                profesorEncontrado = prof;
+                break;
+            }
+        }
+
+        if (profesorEncontrado == null) {
+            JOptionPane.showMessageDialog(null,
+                "No se encontró ningún profesor con ese correo",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Generar código
+        codigoVerificacionProfesor = generarCodigoVerificacion();
+
+        // Enviar código por correo
+        try {
+            enviarCorreoConCodigo(profesorEncontrado.getCorreo(),
+                profesorEncontrado.getNombre(),
+                codigoVerificacionProfesor);
+
+            JOptionPane.showMessageDialog(null,
+                "Se ha enviado un código de verificación a su correo",
+                "Código Enviado",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Solicitar código
+            String codigoIngresado = JOptionPane.showInputDialog(null,
+                "Ingrese el código de verificación que recibió por correo:",
+                "Verificación",
+                JOptionPane.QUESTION_MESSAGE);
+
+            if (codigoIngresado == null || !codigoIngresado.equals(codigoVerificacionProfesor)) {
+                JOptionPane.showMessageDialog(null,
+                    "Código incorrecto",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Mostrar ventana para cambiar contraseña
+            mostrarVentanaCambiarContrasena(profesorEncontrado, false);
+
+        } catch (MessagingException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al enviar el correo: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void enviarCorreoConCodigo(String destinatario, String nombre, String codigo) throws MessagingException {
+        String host = "smtp.gmail.com";
+        String usuario = "ronniadmision@gmail.com";
+        String contraseña = "fmfe pkuy xzwj jkls";
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(usuario, contraseña);
+            }
+        });
+
+        Message message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(usuario));
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(destinatario));
+        message.setSubject("Código de Verificación - Recuperación de Contraseña");
+
+        String mensaje = "Estimado " + nombre + ",\n\n" +
+                        "Su código de verificación para recuperar su contraseña es: " + codigo + "\n\n" +
+                        "Este código es válido por esta sesión únicamente.\n\n" +
+                        "Si usted no solicitó este código, ignore este correo.\n\n" +
+                        "Saludos,\nSistema de Matrícula";
+
+        message.setText(mensaje);
+        Transport.send(message);
+    }
+
+    private void mostrarVentanaCambiarContrasena(Object usuario, boolean esEstudiante) {
+        JFrame ventanaCambio = new JFrame("Cambiar Contraseña");
+        ventanaCambio.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaCambio.setSize(400, 300);
+        ventanaCambio.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Cambiar Contraseña");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Nueva contraseña
+        JLabel labelNueva = new JLabel("Nueva Contraseña:");
+        labelNueva.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelNueva);
+
+        JPasswordField txtNuevaContrasena = new JPasswordField(20);
+        txtNuevaContrasena.setMaximumSize(new Dimension(250, 25));
+        txtNuevaContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtNuevaContrasena);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Confirmar contraseña
+        JLabel labelConfirmar = new JLabel("Confirmar Contraseña:");
+        labelConfirmar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelConfirmar);
+
+        JPasswordField txtConfirmarContrasena = new JPasswordField(20);
+        txtConfirmarContrasena.setMaximumSize(new Dimension(250, 25));
+        txtConfirmarContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(txtConfirmarContrasena);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnGuardar = new JButton("Guardar");
+        btnGuardar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String nuevaContrasena = new String(txtNuevaContrasena.getPassword());
+                String confirmarContrasena = new String(txtConfirmarContrasena.getPassword());
+
+                if (nuevaContrasena.isEmpty() || confirmarContrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(ventanaCambio,
+                        "Por favor complete todos los campos",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (!nuevaContrasena.equals(confirmarContrasena)) {
+                    JOptionPane.showMessageDialog(ventanaCambio,
+                        "Las contraseñas no coinciden",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validar contraseña
+                String errorValidacion = null;
+                if (nuevaContrasena.length() < 8) {
+                    errorValidacion = "La contraseña debe tener al menos 8 caracteres";
+                } else if (!nuevaContrasena.matches(".*\\d.*")) {
+                    errorValidacion = "La contraseña debe contener al menos un número";
+                } else if (!nuevaContrasena.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+                    errorValidacion = "La contraseña debe contener al menos un carácter especial";
+                }
+
+                if (errorValidacion != null) {
+                    JOptionPane.showMessageDialog(ventanaCambio,
+                        errorValidacion,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Cambiar contraseña
+                if (esEstudiante) {
+                    Estudiantes est = (Estudiantes) usuario;
+                    est.setContrasena(nuevaContrasena);
+                    GestorArchivos.guardarEstudiantes(estudiantes);
+                } else {
+                    Profesores prof = (Profesores) usuario;
+                    prof.setContrasena(nuevaContrasena);
+                    GestorArchivos.guardarProfesores(profesores);
+                }
+
+                JOptionPane.showMessageDialog(ventanaCambio,
+                    "Contraseña cambiada exitosamente",
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+                ventanaCambio.dispose();
+            }
+        });
+
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaCambio.dispose();
+            }
+        });
+
+        panelBotones.add(btnGuardar);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones);
+
+        ventanaCambio.add(panelPrincipal);
+        ventanaCambio.setVisible(true);
+    }
+
     private void mostrarVentanaMatricular(Estudiantes estudiante) {
         // Crear ventana para matricular curso
         JFrame ventanaMatricula = new JFrame("Matricular Curso");
@@ -3352,8 +4000,8 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
 
                 if (resultado.equals("Matriculado satisfactoriamente.")) {
                     // Guardar cambios
-                    guardarEstudiantesEnArchivo();
-                    guardarCursosEnArchivo();
+                    GestorArchivos.guardarEstudiantes(estudiantes);
+                    GestorArchivos.guardarCursos(cursos);
 
                     JOptionPane.showMessageDialog(ventanaMatricula,
                         resultado,
@@ -3391,7 +4039,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         // Crear ventana de login
         JFrame ventanaLogin = new JFrame("Login - Estudiantes");
         ventanaLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ventanaLogin.setSize(350, 250);
+        ventanaLogin.setSize(400, 300);
         ventanaLogin.setLocationRelativeTo(null);
 
         // Panel principal
@@ -3480,6 +4128,17 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelBotones.add(btnIngresar);
         panelBotones.add(btnVolver);
         panelPrincipal.add(panelBotones);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Botón cambiar contraseña
+        JButton btnCambiarContrasena = new JButton("Cambiar Contraseña");
+        btnCambiarContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCambiarContrasena.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                recuperarContrasenaEstudiante();
+            }
+        });
+        panelPrincipal.add(btnCambiarContrasena);
 
         ventanaLogin.add(panelPrincipal);
         ventanaLogin.setVisible(true);
@@ -3492,7 +4151,7 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         // Crear ventana de login
         JFrame ventanaLogin = new JFrame("Login - Profesores");
         ventanaLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ventanaLogin.setSize(350, 250);
+        ventanaLogin.setSize(400, 300);
         ventanaLogin.setLocationRelativeTo(null);
 
         // Panel principal
@@ -3581,15 +4240,937 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
         panelBotones.add(btnIngresar);
         panelBotones.add(btnVolver);
         panelPrincipal.add(panelBotones);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Botón cambiar contraseña
+        JButton btnCambiarContrasena = new JButton("Cambiar Contraseña");
+        btnCambiarContrasena.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCambiarContrasena.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                recuperarContrasenaProfesor();
+            }
+        });
+        panelPrincipal.add(btnCambiarContrasena);
 
         ventanaLogin.add(panelPrincipal);
         ventanaLogin.setVisible(true);
     }
 
+    private void mostrarCursosProfesor(Profesores profesor) {
+        JFrame ventanaCursos = new JFrame("Mis Cursos Impartidos");
+        ventanaCursos.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaCursos.setSize(700, 500);
+        ventanaCursos.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Mis Cursos Impartidos");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener cursos usando el método de la clase Profesores
+        List<Grupos> cursosImpartidos = profesor.getCursosImpartidos();
+
+        // Verificar si tiene grupos asignados
+        if (cursosImpartidos == null || cursosImpartidos.isEmpty()) {
+            JLabel labelNoCursos = new JLabel("No tienes cursos asignados");
+            labelNoCursos.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoCursos);
+        } else {
+            // Mostrar cada curso que imparte
+            for (Grupos grupo : cursosImpartidos) {
+                Cursos curso = grupo.getCurso();
+
+                // Panel para cada curso
+                JPanel panelCurso = new JPanel();
+                panelCurso.setLayout(new BoxLayout(panelCurso, BoxLayout.Y_AXIS));
+                panelCurso.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelCurso.setMaximumSize(new Dimension(600, 220));
+                panelCurso.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre del curso
+                JLabel labelNombreCurso = new JLabel("Curso: " + curso.getNombre());
+                labelNombreCurso.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombreCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelNombreCurso);
+                panelCurso.add(Box.createVerticalStrut(5));
+
+                // Información del curso
+                JLabel labelId = new JLabel("ID: " + curso.getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelId);
+
+                JLabel labelGrupo = new JLabel("Grupo: " + grupo.getIdentificacionGrupo());
+                labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelGrupo);
+
+                JLabel labelModalidad = new JLabel("Modalidad: " + curso.getModalidad());
+                labelModalidad.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelModalidad.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelModalidad);
+
+                JLabel labelHoras = new JLabel("Horas por día: " + curso.getHorasPorDia());
+                labelHoras.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelHoras.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelHoras);
+
+                JLabel labelTipo = new JLabel("Tipo: " + curso.getTipo());
+                labelTipo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelTipo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelTipo);
+
+                // Cantidad de estudiantes en el grupo
+                int cantidadEstudiantes = grupo.getEstudiantes() != null ? grupo.getEstudiantes().size() : 0;
+                JLabel labelEstudiantes = new JLabel("Estudiantes matriculados: " + cantidadEstudiantes + "/" + curso.getMaxEstudiantes());
+                labelEstudiantes.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelEstudiantes.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelEstudiantes);
+
+                panelPrincipal.add(panelCurso);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaCursos.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaCursos.add(scrollPane);
+        ventanaCursos.setVisible(true);
+    }
+
+    // Método para asignar evaluación a un grupo
+    private void mostrarVentanaAsignarEvaluacion(Profesores profesor) {
+        JFrame ventanaAsignar = new JFrame("Asignar Evaluación a Grupo");
+        ventanaAsignar.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaAsignar.setSize(500, 400);
+        ventanaAsignar.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Asignar Evaluación a Grupo");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Cargar evaluaciones
+        evaluaciones = GestorArchivos.cargarEvaluaciones();
+
+        // ComboBox de Evaluaciones
+        JLabel labelEvaluacion = new JLabel("Seleccione una evaluación:");
+        labelEvaluacion.setFont(new Font("Arial", Font.BOLD, 14));
+        labelEvaluacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(labelEvaluacion);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboEvaluaciones = new JComboBox<>();
+        comboEvaluaciones.setMaximumSize(new Dimension(400, 25));
+        comboEvaluaciones.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        for (Evaluaciones eval : evaluaciones) {
+            comboEvaluaciones.addItem(eval.getIdentificacion() + " - " + eval.getNombre());
+        }
+        panelPrincipal.add(comboEvaluaciones);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // ComboBox de Cursos
+        JLabel labelCurso = new JLabel("Seleccione un curso:");
+        labelCurso.setFont(new Font("Arial", Font.BOLD, 14));
+        labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(labelCurso);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboCursos = new JComboBox<>();
+        comboCursos.setMaximumSize(new Dimension(400, 25));
+        comboCursos.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Llenar con los cursos del profesor
+        List<Grupos> gruposProfesor = profesor.getCursosImpartidos();
+        List<Cursos> cursosProfesor = new ArrayList<>();
+        for (Grupos grupo : gruposProfesor) {
+            Cursos curso = grupo.getCurso();
+            if (!cursosProfesor.contains(curso)) {
+                cursosProfesor.add(curso);
+                comboCursos.addItem(curso.getIdentificacion() + " - " + curso.getNombre());
+            }
+        }
+        panelPrincipal.add(comboCursos);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // ComboBox de Grupos
+        JLabel labelGrupo = new JLabel("Seleccione un grupo:");
+        labelGrupo.setFont(new Font("Arial", Font.BOLD, 14));
+        labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(labelGrupo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JComboBox<String> comboGrupos = new JComboBox<>();
+        comboGrupos.setMaximumSize(new Dimension(400, 25));
+        comboGrupos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(comboGrupos);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Actualizar grupos al seleccionar curso
+        comboCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = comboCursos.getSelectedIndex();
+                if (selectedIndex >= 0 && selectedIndex < cursosProfesor.size()) {
+                    Cursos cursoSeleccionado = cursosProfesor.get(selectedIndex);
+                    comboGrupos.removeAllItems();
+
+                    for (Grupos grupo : gruposProfesor) {
+                        if (grupo.getCurso().equals(cursoSeleccionado)) {
+                            comboGrupos.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                        }
+                    }
+                }
+            }
+        });
+
+        // Inicializar grupos del primer curso
+        if (!cursosProfesor.isEmpty()) {
+            Cursos primerCurso = cursosProfesor.get(0);
+            for (Grupos grupo : gruposProfesor) {
+                if (grupo.getCurso().equals(primerCurso)) {
+                    comboGrupos.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                }
+            }
+        }
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton btnAsignar = new JButton("Asignar");
+        btnAsignar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (comboEvaluaciones.getSelectedIndex() < 0 || comboCursos.getSelectedIndex() < 0 || comboGrupos.getSelectedIndex() < 0) {
+                    JOptionPane.showMessageDialog(ventanaAsignar, "Por favor seleccione todos los campos", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Evaluaciones evaluacionSeleccionada = evaluaciones.get(comboEvaluaciones.getSelectedIndex());
+                Cursos cursoSeleccionado = cursosProfesor.get(comboCursos.getSelectedIndex());
+
+                // Encontrar el grupo seleccionado
+                Grupos grupoSeleccionado = null;
+                int grupoIndex = 0;
+                for (Grupos grupo : gruposProfesor) {
+                    if (grupo.getCurso().equals(cursoSeleccionado)) {
+                        if (grupoIndex == comboGrupos.getSelectedIndex()) {
+                            grupoSeleccionado = grupo;
+                            break;
+                        }
+                        grupoIndex++;
+                    }
+                }
+
+                if (grupoSeleccionado != null) {
+                    // Solicitar fecha y hora de inicio y fin
+                    String fechaInicioStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de inicio (formato: dd/MM/yyyy HH:mm):\nEjemplo: 4/11/2025 08:00");
+                    String fechaFinStr = JOptionPane.showInputDialog(ventanaAsignar, "Ingrese fecha y hora de fin (formato: dd/MM/yyyy HH:mm):\nEjemplo: 5/11/2025 10:00");
+
+                    if (fechaInicioStr == null || fechaFinStr == null || fechaInicioStr.trim().isEmpty() || fechaFinStr.trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Debe ingresar ambas fechas", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    try {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+                        Date fechaInicio = sdf.parse(fechaInicioStr);
+                        Date fechaFin = sdf.parse(fechaFinStr);
+
+                        if (fechaFin.before(fechaInicio)) {
+                            JOptionPane.showMessageDialog(ventanaAsignar, "La fecha de fin debe ser posterior a la fecha de inicio", "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        // Crear evaluación asignada
+                        EvaluacionAsignada nuevaAsignacion = new EvaluacionAsignada(evaluacionSeleccionada, grupoSeleccionado, fechaInicio, fechaFin);
+                        evaluacionesAsignadas.add(nuevaAsignacion);
+                        GestorArchivos.guardarEvaluacionesAsignadas(evaluacionesAsignadas);
+
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Evaluación asignada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                        ventanaAsignar.dispose();
+                    } catch (java.text.ParseException ex) {
+                        JOptionPane.showMessageDialog(ventanaAsignar, "Formato de fecha inválido. Use: dd/MM/yyyy HH:mm", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaAsignar.dispose();
+            }
+        });
+
+        panelBotones.add(btnAsignar);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones);
+
+        ventanaAsignar.add(panelPrincipal);
+        ventanaAsignar.setVisible(true);
+    }
+
+    // Método para ver evaluaciones asignadas
+    private void mostrarEvaluacionesAsignadas(Profesores profesor) {
+        JFrame ventanaEvaluaciones = new JFrame("Evaluaciones Asignadas");
+        ventanaEvaluaciones.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaEvaluaciones.setSize(700, 500);
+        ventanaEvaluaciones.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Evaluaciones Asignadas a Mis Grupos");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Filtrar evaluaciones asignadas a los grupos del profesor
+        List<Grupos> gruposProfesor = profesor.getCursosImpartidos();
+        List<EvaluacionAsignada> evaluacionesDelProfesor = new ArrayList<>();
+
+        for (EvaluacionAsignada asignacion : evaluacionesAsignadas) {
+            // Comparar grupos por identificación en lugar de usar contains
+            boolean grupoCoincide = false;
+            for (Grupos grupoProfesor : gruposProfesor) {
+                if (grupoProfesor.getCurso().getIdentificacion().equals(asignacion.getGrupo().getCurso().getIdentificacion()) &&
+                    grupoProfesor.getIdentificacionGrupo() == asignacion.getGrupo().getIdentificacionGrupo()) {
+                    grupoCoincide = true;
+                    break;
+                }
+            }
+            if (grupoCoincide) {
+                evaluacionesDelProfesor.add(asignacion);
+            }
+        }
+
+        if (evaluacionesDelProfesor.isEmpty()) {
+            JLabel labelNoEval = new JLabel("No hay evaluaciones asignadas a tus grupos");
+            labelNoEval.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEval);
+        } else {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+            for (EvaluacionAsignada asignacion : evaluacionesDelProfesor) {
+                JPanel panelEval = new JPanel();
+                panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
+                panelEval.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelEval.setMaximumSize(new Dimension(600, 220));
+                panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel labelNombre = new JLabel("Evaluación: " + asignacion.getEvaluacion().getNombre());
+                labelNombre.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombre.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelNombre);
+                panelEval.add(Box.createVerticalStrut(5));
+
+                JLabel labelCurso = new JLabel("Curso: " + asignacion.getGrupo().getCurso().getNombre());
+                labelCurso.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelCurso);
+
+                JLabel labelGrupo = new JLabel("Grupo: " + asignacion.getGrupo().getIdentificacionGrupo());
+                labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelGrupo);
+
+                JLabel labelId = new JLabel("ID Evaluación: " + asignacion.getEvaluacion().getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelId);
+
+                // Fechas
+                String fechaInicioStr = asignacion.getFechaInicio() != null ? sdf.format(asignacion.getFechaInicio()) : "No definida";
+                String fechaFinStr = asignacion.getFechaFin() != null ? sdf.format(asignacion.getFechaFin()) : "No definida";
+
+                JLabel labelFechas = new JLabel("Disponible: " + fechaInicioStr + " - " + fechaFinStr);
+                labelFechas.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelFechas.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelFechas);
+
+                panelEval.add(Box.createVerticalStrut(10));
+
+                // Panel de botones (previsualizar y desasignar)
+                JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+                panelBotones.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                // Botón de previsualización
+                JButton btnPrevisualizar = new JButton("Previsualizar");
+                btnPrevisualizar.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        VentanaRealizarEvaluacion ventanaPreview = new VentanaRealizarEvaluacion(
+                            asignacion, Sistemadematriculaycalificaciones.this);
+                        ventanaPreview.setVisible(true);
+                    }
+                });
+                panelBotones.add(btnPrevisualizar);
+
+                // Botón de realizadas
+                JButton btnRealizadas = new JButton("Realizadas");
+                btnRealizadas.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        mostrarEvaluacionesRealizadas(asignacion);
+                    }
+                });
+                panelBotones.add(btnRealizadas);
+
+                // Botón de desasignar
+                JButton btnDesasignar = new JButton("Desasignar");
+                btnDesasignar.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        int confirmacion = JOptionPane.showConfirmDialog(
+                            ventanaEvaluaciones,
+                            "¿Está seguro que desea desasignar esta evaluación?\n\n" +
+                            "Evaluación: " + asignacion.getEvaluacion().getNombre() + "\n" +
+                            "Grupo: " + asignacion.getGrupo().getCurso().getNombre() + " - Grupo " + asignacion.getGrupo().getIdentificacionGrupo(),
+                            "Confirmar Desasignación",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                        );
+
+                        if (confirmacion == JOptionPane.YES_OPTION) {
+                            // Eliminar la asignación de la lista
+                            evaluacionesAsignadas.remove(asignacion);
+                            // Guardar cambios en archivo
+                            GestorArchivos.guardarEvaluacionesAsignadas(evaluacionesAsignadas);
+                            // Mostrar mensaje de éxito
+                            JOptionPane.showMessageDialog(
+                                ventanaEvaluaciones,
+                                "Evaluación desasignada exitosamente",
+                                "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            // Reabrir la ventana para actualizar la lista
+                            ventanaEvaluaciones.dispose();
+                            mostrarEvaluacionesAsignadas(profesor);
+                        }
+                    }
+                });
+                panelBotones.add(btnDesasignar);
+
+                panelEval.add(panelBotones);
+
+                panelPrincipal.add(panelEval);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaEvaluaciones.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaEvaluaciones.add(scrollPane);
+        ventanaEvaluaciones.setVisible(true);
+    }
+
+    // Método para mostrar las evaluaciones realizadas por los estudiantes
+    private void mostrarEvaluacionesRealizadas(EvaluacionAsignada asignacion) {
+        // Cargar las evaluaciones realizadas desde archivo
+        evaluacionesRealizadas = GestorArchivos.cargarEvaluacionesRealizadas();
+
+        JFrame ventanaRealizadas = new JFrame("Evaluaciones Realizadas");
+        ventanaRealizadas.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaRealizadas.setSize(800, 600);
+        ventanaRealizadas.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Resultados de Estudiantes");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Información de la evaluación
+        JLabel labelEvaluacion = new JLabel("Evaluación: " + asignacion.getEvaluacion().getNombre());
+        labelEvaluacion.setFont(new Font("Arial", Font.BOLD, 16));
+        labelEvaluacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelEvaluacion);
+
+        JLabel labelGrupo = new JLabel("Grupo: " + asignacion.getGrupo().getCurso().getNombre() +
+                                       " - Grupo " + asignacion.getGrupo().getIdentificacionGrupo());
+        labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+        labelGrupo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelGrupo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Filtrar evaluaciones realizadas para esta asignación
+        List<EvaluacionRealizada> evaluacionesFiltradas = new ArrayList<>();
+        for (EvaluacionRealizada realizada : evaluacionesRealizadas) {
+            EvaluacionAsignada asigRealizada = realizada.getEvaluacionAsignada();
+            // Comparar por identificación de evaluación y grupo
+            boolean coincide = asigRealizada.getEvaluacion().getIdentificacion() == asignacion.getEvaluacion().getIdentificacion() &&
+                               asigRealizada.getGrupo().getCurso().getIdentificacion().equals(asignacion.getGrupo().getCurso().getIdentificacion()) &&
+                               asigRealizada.getGrupo().getIdentificacionGrupo() == asignacion.getGrupo().getIdentificacionGrupo();
+
+            if (coincide && realizada.isFinalizada()) {
+                evaluacionesFiltradas.add(realizada);
+            }
+        }
+
+        if (evaluacionesFiltradas.isEmpty()) {
+            JLabel labelNoRealizada = new JLabel("Ningún estudiante ha realizado esta evaluación aún");
+            labelNoRealizada.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoRealizada.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoRealizada);
+        } else {
+            // Mostrar estadísticas
+            double sumaCalificaciones = 0;
+            double maxCalificacion = 0;
+            double minCalificacion = Double.MAX_VALUE;
+
+            for (EvaluacionRealizada realizada : evaluacionesFiltradas) {
+                double cal = realizada.getCalificacionObtenida();
+                sumaCalificaciones += cal;
+                if (cal > maxCalificacion) maxCalificacion = cal;
+                if (cal < minCalificacion) minCalificacion = cal;
+            }
+
+            double promedio = sumaCalificaciones / evaluacionesFiltradas.size();
+
+            JPanel panelEstadisticas = new JPanel();
+            panelEstadisticas.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+            panelEstadisticas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelEstadisticas.setBorder(BorderFactory.createTitledBorder("Estadísticas"));
+
+            JLabel labelTotal = new JLabel("Total: " + evaluacionesFiltradas.size());
+            JLabel labelPromedio = new JLabel(String.format("Promedio: %.2f", promedio));
+            JLabel labelMax = new JLabel(String.format("Máxima: %.2f", maxCalificacion));
+            JLabel labelMin = new JLabel(String.format("Mínima: %.2f", minCalificacion));
+
+            panelEstadisticas.add(labelTotal);
+            panelEstadisticas.add(labelPromedio);
+            panelEstadisticas.add(labelMax);
+            panelEstadisticas.add(labelMin);
+
+            panelPrincipal.add(panelEstadisticas);
+            panelPrincipal.add(Box.createVerticalStrut(15));
+
+            // Ordenar por calificación descendente
+            evaluacionesFiltradas.sort((e1, e2) -> Double.compare(e2.getCalificacionObtenida(), e1.getCalificacionObtenida()));
+
+            // Mostrar cada evaluación realizada
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+            for (EvaluacionRealizada realizada : evaluacionesFiltradas) {
+                JPanel panelEstudiante = new JPanel();
+                panelEstudiante.setLayout(new BoxLayout(panelEstudiante, BoxLayout.Y_AXIS));
+                panelEstudiante.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelEstudiante.setMaximumSize(new Dimension(700, 150));
+                panelEstudiante.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre del estudiante
+                JLabel labelEstudiante = new JLabel("Estudiante: " +
+                    realizada.getEstudiante().getNombre() + " " +
+                    realizada.getEstudiante().getApellido1() + " " +
+                    realizada.getEstudiante().getApellido2());
+                labelEstudiante.setFont(new Font("Arial", Font.BOLD, 14));
+                labelEstudiante.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelEstudiante);
+
+                // ID del estudiante
+                JLabel labelId = new JLabel("ID: " + realizada.getEstudiante().getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelId);
+                panelEstudiante.add(Box.createVerticalStrut(5));
+
+                // Calificación
+                JLabel labelCalificacion = new JLabel(String.format("Calificación: %.2f puntos",
+                    realizada.getCalificacionObtenida()));
+                labelCalificacion.setFont(new Font("Arial", Font.BOLD, 16));
+                labelCalificacion.setForeground(new Color(0, 120, 0));
+                labelCalificacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelCalificacion);
+
+                // Fechas
+                String fechaInicio = realizada.getFechaHoraInicio() != null ?
+                    sdf.format(realizada.getFechaHoraInicio()) : "N/A";
+                String fechaFin = realizada.getFechaHoraFin() != null ?
+                    sdf.format(realizada.getFechaHoraFin()) : "N/A";
+
+                JLabel labelFechas = new JLabel("Inicio: " + fechaInicio + " | Fin: " + fechaFin);
+                labelFechas.setFont(new Font("Arial", Font.PLAIN, 11));
+                labelFechas.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEstudiante.add(labelFechas);
+                panelEstudiante.add(Box.createVerticalStrut(8));
+
+                // Botón para ver detalle
+                JButton btnVerDetalle = new JButton("Ver Respuestas Detalladas");
+                btnVerDetalle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnVerDetalle.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        mostrarDetalleEvaluacionRealizada(realizada);
+                    }
+                });
+                panelEstudiante.add(btnVerDetalle);
+
+                panelPrincipal.add(panelEstudiante);
+                panelPrincipal.add(Box.createVerticalStrut(10));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaRealizadas.dispose();
+            }
+        });
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaRealizadas.add(scrollPane);
+        ventanaRealizadas.setVisible(true);
+    }
+
+    // Método para mostrar el detalle de una evaluación realizada
+    private void mostrarDetalleEvaluacionRealizada(EvaluacionRealizada evaluacionRealizada) {
+        JFrame ventanaDetalle = new JFrame("Detalle de Respuestas");
+        ventanaDetalle.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaDetalle.setSize(900, 700);
+        ventanaDetalle.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Respuestas Detalladas");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Información del estudiante
+        JLabel labelEstudiante = new JLabel("Estudiante: " +
+            evaluacionRealizada.getEstudiante().getNombre() + " " +
+            evaluacionRealizada.getEstudiante().getApellido1() + " " +
+            evaluacionRealizada.getEstudiante().getApellido2());
+        labelEstudiante.setFont(new Font("Arial", Font.BOLD, 16));
+        labelEstudiante.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelEstudiante);
+
+        JLabel labelCalificacion = new JLabel(String.format("Calificación Final: %.2f puntos",
+            evaluacionRealizada.getCalificacionObtenida()));
+        labelCalificacion.setFont(new Font("Arial", Font.BOLD, 16));
+        labelCalificacion.setForeground(new Color(0, 120, 0));
+        labelCalificacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelCalificacion);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener las preguntas en el orden que fueron presentadas
+        List<Object> preguntasOrdenadas = evaluacionRealizada.getOrdenPreguntas();
+        Map<Integer, Object> respuestas = evaluacionRealizada.getRespuestas();
+
+        if (preguntasOrdenadas.isEmpty()) {
+            JLabel labelNoPreguntas = new JLabel("No hay información de preguntas disponible");
+            labelNoPreguntas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoPreguntas);
+        } else {
+            int numeroPregunta = 1;
+            for (Object pregunta : preguntasOrdenadas) {
+                JPanel panelPregunta = new JPanel();
+                panelPregunta.setLayout(new BoxLayout(panelPregunta, BoxLayout.Y_AXIS));
+                panelPregunta.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createTitledBorder("Pregunta " + numeroPregunta),
+                    BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                ));
+                panelPregunta.setAlignmentX(Component.CENTER_ALIGNMENT);
+                panelPregunta.setMaximumSize(new Dimension(800, Integer.MAX_VALUE));
+
+                Object respuestaEstudiante = respuestas.get(numeroPregunta - 1);
+
+                // Mostrar según el tipo de pregunta
+                if (pregunta instanceof SeleccionUnica) {
+                    SeleccionUnica su = (SeleccionUnica) pregunta;
+                    agregarDetalleSeleccionUnica(panelPregunta, su, respuestaEstudiante);
+                } else if (pregunta instanceof SeleccionMultiple) {
+                    SeleccionMultiple sm = (SeleccionMultiple) pregunta;
+                    agregarDetalleSeleccionMultiple(panelPregunta, sm, respuestaEstudiante);
+                } else if (pregunta instanceof FalsoVerdadero) {
+                    FalsoVerdadero fv = (FalsoVerdadero) pregunta;
+                    agregarDetalleFalsoVerdadero(panelPregunta, fv, respuestaEstudiante);
+                } else if (pregunta instanceof Pareo) {
+                    Pareo p = (Pareo) pregunta;
+                    agregarDetallePareo(panelPregunta, p, respuestaEstudiante);
+                } else if (pregunta instanceof Sopa) {
+                    Sopa s = (Sopa) pregunta;
+                    agregarDetalleSopa(panelPregunta, s, respuestaEstudiante);
+                }
+
+                panelPrincipal.add(panelPregunta);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+                numeroPregunta++;
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaDetalle.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaDetalle.add(scrollPane);
+        ventanaDetalle.setVisible(true);
+    }
+
+    // Métodos auxiliares para mostrar detalles de cada tipo de pregunta
+    private void agregarDetalleSeleccionUnica(JPanel panel, SeleccionUnica pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        String respuestaEstudiante = respuesta != null ? respuesta.toString() : "Sin responder";
+        String respuestaCorrecta = pregunta.getRespuesta();
+        boolean esCorrecta = respuestaEstudiante.equals(respuestaCorrecta);
+
+        JLabel labelRespuestaEst = new JLabel("<html><b>Respuesta del estudiante:</b> " + respuestaEstudiante + "</html>");
+        labelRespuestaEst.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelRespuestaEst.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaEst);
+
+        JLabel labelRespuestaCorr = new JLabel("<html><b>Respuesta correcta:</b> " + respuestaCorrecta + "</html>");
+        labelRespuestaCorr.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelRespuestaCorr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaCorr);
+
+        JLabel labelResultado = new JLabel(esCorrecta ? "✓ CORRECTA" : "✗ INCORRECTA");
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetalleSeleccionMultiple(JPanel panel, SeleccionMultiple pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        List<String> respuestasEstudiante = respuesta != null ? (List<String>) respuesta : new ArrayList<>();
+        List<String> respuestasCorrectas = pregunta.getRespuesta();
+
+        boolean esCorrecta = respuestasEstudiante.size() == respuestasCorrectas.size() &&
+                            respuestasEstudiante.containsAll(respuestasCorrectas);
+
+        JLabel labelRespuestaEst = new JLabel("<html><b>Respuestas del estudiante:</b> " +
+            String.join(", ", respuestasEstudiante) + "</html>");
+        labelRespuestaEst.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelRespuestaEst.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaEst);
+
+        JLabel labelRespuestaCorr = new JLabel("<html><b>Respuestas correctas:</b> " +
+            String.join(", ", respuestasCorrectas) + "</html>");
+        labelRespuestaCorr.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelRespuestaCorr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaCorr);
+
+        JLabel labelResultado = new JLabel(esCorrecta ? "✓ CORRECTA" : "✗ INCORRECTA");
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetalleFalsoVerdadero(JPanel panel, FalsoVerdadero pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        String respuestaEstudiante = respuesta != null ? respuesta.toString() : "Sin responder";
+        String respuestaCorrecta = pregunta.getRespuesta();
+        boolean esCorrecta = respuestaEstudiante.equals(respuestaCorrecta);
+
+        JLabel labelRespuestaEst = new JLabel("<html><b>Respuesta del estudiante:</b> " + respuestaEstudiante + "</html>");
+        labelRespuestaEst.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelRespuestaEst.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaEst);
+
+        JLabel labelRespuestaCorr = new JLabel("<html><b>Respuesta correcta:</b> " + respuestaCorrecta + "</html>");
+        labelRespuestaCorr.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelRespuestaCorr.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelRespuestaCorr);
+
+        JLabel labelResultado = new JLabel(esCorrecta ? "✓ CORRECTA" : "✗ INCORRECTA");
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(esCorrecta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetallePareo(JPanel panel, Pareo pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        Map<Integer, Integer> respuestasEstudiante = respuesta != null ? (Map<Integer, Integer>) respuesta : new HashMap<>();
+        Map<Integer, Integer> respuestasCorrectas = pregunta.getRelacionesCorrectas();
+
+        double puntosObtenidos = pregunta.calificar(respuestasEstudiante);
+
+        JLabel labelInfo = new JLabel("Emparejamientos:");
+        labelInfo.setFont(new Font("Arial", Font.BOLD, 12));
+        labelInfo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelInfo);
+        panel.add(Box.createVerticalStrut(5));
+
+        List<String> col1 = pregunta.getColumna1();
+        List<String> col2 = pregunta.getColumna2();
+
+        for (int i = 0; i < col1.size(); i++) {
+            Integer respEst = respuestasEstudiante.get(i);
+            Integer respCorr = respuestasCorrectas.get(i);
+
+            String textoRespEst = respEst != null && respEst < col2.size() ? col2.get(respEst) : "Sin responder";
+            String textoRespCorr = respCorr != null && respCorr < col2.size() ? col2.get(respCorr) : "N/A";
+
+            boolean correcta = respEst != null && respEst.equals(respCorr);
+
+            JLabel labelEmparejamiento = new JLabel(String.format("<html>%s → <b>%s</b> (Correcta: %s) %s</html>",
+                col1.get(i), textoRespEst, textoRespCorr, correcta ? "✓" : "✗"));
+            labelEmparejamiento.setForeground(correcta ? new Color(0, 120, 0) : new Color(180, 0, 0));
+            labelEmparejamiento.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(labelEmparejamiento);
+        }
+
+        panel.add(Box.createVerticalStrut(5));
+        JLabel labelResultado = new JLabel(String.format("Puntos obtenidos: %.2f / %d", puntosObtenidos, pregunta.getPuntos()));
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(new Color(0, 100, 150));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
+    private void agregarDetalleSopa(JPanel panel, Sopa pregunta, Object respuesta) {
+        JLabel labelDescripcion = new JLabel("<html><b>Pregunta:</b> " + pregunta.getDescripcion() + "</html>");
+        labelDescripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelDescripcion);
+        panel.add(Box.createVerticalStrut(8));
+
+        JLabel labelPuntos = new JLabel("Puntos posibles: " + pregunta.getPuntos());
+        labelPuntos.setFont(new Font("Arial", Font.PLAIN, 12));
+        labelPuntos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelPuntos);
+        panel.add(Box.createVerticalStrut(8));
+
+        List<String> palabrasEncontradas = respuesta != null ? (List<String>) respuesta : new ArrayList<>();
+        List<String> palabrasCorrectas = pregunta.getPalabras();
+
+        double puntosObtenidos = pregunta.calificar(palabrasEncontradas);
+
+        int encontradas = 0;
+        for (String palabra : palabrasCorrectas) {
+            boolean encontrada = palabrasEncontradas.contains(palabra.toUpperCase());
+            if (encontrada) encontradas++;
+        }
+
+        JLabel labelInfo = new JLabel(String.format("Palabras encontradas: %d / %d", encontradas, palabrasCorrectas.size()));
+        labelInfo.setFont(new Font("Arial", Font.BOLD, 12));
+        labelInfo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelInfo);
+        panel.add(Box.createVerticalStrut(5));
+
+        for (String palabra : palabrasCorrectas) {
+            boolean encontrada = palabrasEncontradas.contains(palabra.toUpperCase());
+            JLabel labelPalabra = new JLabel(palabra + " " + (encontrada ? "✓" : "✗"));
+            labelPalabra.setForeground(encontrada ? new Color(0, 120, 0) : new Color(180, 0, 0));
+            labelPalabra.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(labelPalabra);
+        }
+
+        panel.add(Box.createVerticalStrut(5));
+        JLabel labelResultado = new JLabel(String.format("Puntos obtenidos: %.2f / %d", puntosObtenidos, pregunta.getPuntos()));
+        labelResultado.setFont(new Font("Arial", Font.BOLD, 14));
+        labelResultado.setForeground(new Color(0, 100, 150));
+        labelResultado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(labelResultado);
+    }
+
     private void abrirVentanaProfesores(Profesores profesor) {
         // Cerrar ventana actual
         this.dispose();
-        cargarEvaluacionesDesdeArchivo();
+        evaluaciones = GestorArchivos.cargarEvaluaciones();
         // Crear nueva ventana
         JFrame ventanaProfesores = new JFrame("Ventana de profesores");
         ventanaProfesores.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -3623,15 +5204,403 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
-        // Panel para el botón
-        JPanel panelBoton = new JPanel();
-        panelBoton.add(btnVolver1);
+        JButton btnVerMisCursos = new JButton("Ver Mis Cursos");
+        btnVerMisCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarCursosProfesor(profesor);
+            }
+        });
+
+        JButton btnAsignarEvaluaciones = new JButton("Asignar Evaluaciones");
+        btnAsignarEvaluaciones.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarVentanaAsignarEvaluacion(profesor);
+            }
+        });
+
+        JButton btnEvaluacionesAsignadas = new JButton("Evaluaciones Asignadas");
+        btnEvaluacionesAsignadas.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarEvaluacionesAsignadas(profesor);
+            }
+        });
+
+        JButton btnReporte = new JButton("Reporte");
+        btnReporte.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarVentanaGenerarReporte(profesor);
+            }
+        });
+
+        // Panel para los botones - usando GridLayout
+        JPanel panelBoton = new JPanel(new GridLayout(4, 2, 10, 10));
+        panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnEvaluaciones);
+        panelBoton.add(btnVerMisCursos);
+        panelBoton.add(btnAsignarEvaluaciones);
+        panelBoton.add(btnEvaluacionesAsignadas);
+        panelBoton.add(btnReporte);
+        panelBoton.add(new JLabel(""));
+        panelBoton.add(btnVolver1);
         ventanaProfesores.add(panelBoton, BorderLayout.CENTER);
 
         ventanaProfesores.setVisible(true);
         }
+
+    private void mostrarVentanaPrevisualizarEvaluacion() {
+        if (evaluaciones.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay evaluaciones disponibles para previsualizar", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JFrame ventanaPreview = new JFrame("Seleccionar Evaluación para Previsualizar");
+        ventanaPreview.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaPreview.setSize(600, 400);
+        ventanaPreview.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel labelTitulo = new JLabel("Seleccione una evaluación para previsualizar:");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelTitulo, BorderLayout.NORTH);
+
+        // Lista de evaluaciones
+        DefaultListModel<String> modeloLista = new DefaultListModel<>();
+        for (Evaluaciones eval : evaluaciones) {
+            modeloLista.addElement(eval.getIdentificacion() + " - " + eval.getNombre() +
+                " (" + eval.getDuracion() + " min)");
+        }
+
+        JList<String> listaEvaluaciones = new JList<>(modeloLista);
+        listaEvaluaciones.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(listaEvaluaciones);
+        panelPrincipal.add(scrollPane, BorderLayout.CENTER);
+
+        // Botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnPrevisualizar = new JButton("Previsualizar");
+        JButton btnCancelar = new JButton("Cancelar");
+
+        btnPrevisualizar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int index = listaEvaluaciones.getSelectedIndex();
+                if (index == -1) {
+                    JOptionPane.showMessageDialog(ventanaPreview,
+                        "Debe seleccionar una evaluación", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                Evaluaciones evalSeleccionada = evaluaciones.get(index);
+
+                // Crear una evaluación asignada temporal para preview (sin grupo real)
+                Cursos cursoTemporal = new Cursos();
+                cursoTemporal.setNombre("PREVISUALIZACIÓN");
+                cursoTemporal.setIdentificacion("PREVIEW");
+                Date ahora = new Date();
+                Date unDiaDepues = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
+                Grupos grupoTemporal = new Grupos(0, ahora, unDiaDepues, cursoTemporal);
+
+                EvaluacionAsignada asignacionTemporal = new EvaluacionAsignada(
+                    evalSeleccionada, grupoTemporal, ahora, unDiaDepues);
+
+                // Abrir ventana de previsualización
+                ventanaPreview.dispose();
+                VentanaRealizarEvaluacion ventanaRealizacion = new VentanaRealizarEvaluacion(
+                    asignacionTemporal, Sistemadematriculaycalificaciones.this);
+                ventanaRealizacion.setVisible(true);
+            }
+        });
+
+        btnCancelar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaPreview.dispose();
+            }
+        });
+
+        panelBotones.add(btnPrevisualizar);
+        panelBotones.add(btnCancelar);
+        panelPrincipal.add(panelBotones, BorderLayout.SOUTH);
+
+        ventanaPreview.add(panelPrincipal);
+        ventanaPreview.setVisible(true);
+    }
+
+    private void mostrarCursosMatriculados(Estudiantes estudiante) {
+        JFrame ventanaCursos = new JFrame("Mis Cursos Matriculados");
+        ventanaCursos.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaCursos.setSize(700, 500);
+        ventanaCursos.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Mis Cursos Matriculados");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener cursos usando el método de la clase Estudiantes
+        List<Grupos> cursosMatriculados = estudiante.getCursosMatriculados();
+
+        // Verificar si tiene cursos matriculados
+        if (cursosMatriculados == null || cursosMatriculados.isEmpty()) {
+            JLabel labelNoCursos = new JLabel("No tienes cursos matriculados");
+            labelNoCursos.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoCursos.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoCursos);
+        } else {
+            // Mostrar cada curso matriculado
+            for (Grupos grupo : cursosMatriculados) {
+                Cursos curso = grupo.getCurso();
+
+                // Panel para cada curso
+                JPanel panelCurso = new JPanel();
+                panelCurso.setLayout(new BoxLayout(panelCurso, BoxLayout.Y_AXIS));
+                panelCurso.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelCurso.setMaximumSize(new Dimension(600, 200));
+                panelCurso.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre del curso
+                JLabel labelNombreCurso = new JLabel("Curso: " + curso.getNombre());
+                labelNombreCurso.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombreCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelNombreCurso);
+                panelCurso.add(Box.createVerticalStrut(5));
+
+                // Información del curso
+                JLabel labelId = new JLabel("ID: " + curso.getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelId);
+
+                JLabel labelGrupo = new JLabel("Grupo: " + grupo.getIdentificacionGrupo());
+                labelGrupo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelGrupo);
+
+                JLabel labelModalidad = new JLabel("Modalidad: " + curso.getModalidad());
+                labelModalidad.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelModalidad.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelModalidad);
+
+                JLabel labelHoras = new JLabel("Horas por día: " + curso.getHorasPorDia());
+                labelHoras.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelHoras.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelHoras);
+
+                JLabel labelTipo = new JLabel("Tipo: " + curso.getTipo());
+                labelTipo.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelTipo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelCurso.add(labelTipo);
+
+                panelPrincipal.add(panelCurso);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaCursos.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaCursos.add(scrollPane);
+        ventanaCursos.setVisible(true);
+    }
+
+    // Método para que estudiantes vean evaluaciones asignadas a sus grupos
+    private void mostrarEvaluacionesEstudiante(Estudiantes estudiante) {
+        JFrame ventanaEvaluaciones = new JFrame("Mis Evaluaciones");
+        ventanaEvaluaciones.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaEvaluaciones.setSize(800, 600);
+        ventanaEvaluaciones.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Evaluaciones Asignadas");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Obtener grupos del estudiante
+        List<Grupos> gruposEstudiante = estudiante.getCursosMatriculados();
+
+        // Filtrar evaluaciones asignadas a los grupos del estudiante
+        List<EvaluacionAsignada> evaluacionesDelEstudiante = new ArrayList<>();
+
+        for (EvaluacionAsignada asignacion : evaluacionesAsignadas) {
+            // Comparar grupos por identificación en lugar de usar contains
+            boolean grupoCoincide = false;
+            for (Grupos grupoEstudiante : gruposEstudiante) {
+                if (grupoEstudiante.getCurso().getIdentificacion().equals(asignacion.getGrupo().getCurso().getIdentificacion()) &&
+                    grupoEstudiante.getIdentificacionGrupo() == asignacion.getGrupo().getIdentificacionGrupo()) {
+                    grupoCoincide = true;
+                    break;
+                }
+            }
+            if (grupoCoincide) {
+                evaluacionesDelEstudiante.add(asignacion);
+            }
+        }
+
+        if (evaluacionesDelEstudiante.isEmpty()) {
+            JLabel labelNoEval = new JLabel("No tienes evaluaciones asignadas");
+            labelNoEval.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEval);
+        } else {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+            for (EvaluacionAsignada asignacion : evaluacionesDelEstudiante) {
+                Evaluaciones eval = asignacion.getEvaluacion();
+
+                // Verificar si ya realizó esta evaluación
+                boolean yaRealizada = false;
+                for (EvaluacionRealizada realizada : evaluacionesRealizadas) {
+                    if (realizada.getEstudiante().equals(estudiante) &&
+                        realizada.getEvaluacionAsignada().equals(asignacion) &&
+                        realizada.isFinalizada()) {
+                        yaRealizada = true;
+                        break;
+                    }
+                }
+
+                JPanel panelEval = new JPanel();
+                panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
+
+                // Color del borde según disponibilidad
+                Color colorBorde = Color.GRAY;
+                if (asignacion.estaDisponibleHoy() && !yaRealizada) {
+                    colorBorde = Color.GREEN;
+                } else if (yaRealizada) {
+                    colorBorde = Color.BLUE;
+                }
+
+                panelEval.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(colorBorde, 2),
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)
+                ));
+                panelEval.setMaximumSize(new Dimension(700, 320));
+                panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre de la evaluación
+                JLabel labelNombre = new JLabel("Evaluación: " + eval.getNombre() + " (ID: " + eval.getIdentificacion() + ")");
+                labelNombre.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombre.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelNombre);
+                panelEval.add(Box.createVerticalStrut(5));
+
+                // Curso y grupo
+                JLabel labelCurso = new JLabel("Curso/Grupo: " + asignacion.getGrupo().getCurso().getNombre() + " / Grupo " + asignacion.getGrupo().getIdentificacionGrupo());
+                labelCurso.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelCurso);
+
+                // Fechas de inicio y fin
+                String fechaInicioStr = asignacion.getFechaInicio() != null ? sdf.format(asignacion.getFechaInicio()) : "No definida";
+                String fechaFinStr = asignacion.getFechaFin() != null ? sdf.format(asignacion.getFechaFin()) : "No definida";
+
+                JLabel labelFechaInicio = new JLabel("Inicia: " + fechaInicioStr);
+                labelFechaInicio.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelFechaInicio.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelFechaInicio);
+
+                JLabel labelFechaFin = new JLabel("Termina: " + fechaFinStr);
+                labelFechaFin.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelFechaFin.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelFechaFin);
+
+                // Duración
+                JLabel labelDuracion = new JLabel("Duración: " + eval.getDuracion() + " minutos");
+                labelDuracion.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelDuracion.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelDuracion);
+
+                // Cantidad de preguntas
+                int totalPreguntas = eval.getSeleccionesUnicas().size() +
+                                     eval.getSeleccionesMultiples().size() +
+                                     eval.getFalsoVerdaderos().size() +
+                                     eval.getPareos().size() +
+                                     eval.getSopas().size();
+
+                JLabel labelPreguntas = new JLabel("Total de preguntas: " + totalPreguntas);
+                labelPreguntas.setFont(new Font("Arial", Font.PLAIN, 14));
+                labelPreguntas.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelPreguntas);
+
+                // Estado
+                String estado = "";
+                if (yaRealizada) {
+                    estado = "✓ Realizada";
+                } else if (asignacion.estaDisponibleHoy()) {
+                    estado = "✓ Disponible para realizar";
+                } else {
+                    estado = "✗ No disponible";
+                }
+
+                JLabel labelEstado = new JLabel("Estado: " + estado);
+                labelEstado.setFont(new Font("Arial", Font.BOLD, 14));
+                labelEstado.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelEstado);
+
+                // Botón para realizar evaluación (solo si está disponible y no realizada)
+                if (asignacion.estaDisponibleHoy() && !yaRealizada) {
+                    panelEval.add(Box.createVerticalStrut(10));
+                    JButton btnRealizar = new JButton("Realizar Evaluación");
+                    btnRealizar.setAlignmentX(Component.LEFT_ALIGNMENT);
+                    btnRealizar.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            ventanaEvaluaciones.dispose();
+                            realizarEvaluacion(estudiante, asignacion);
+                        }
+                    });
+                    panelEval.add(btnRealizar);
+                }
+
+                panelPrincipal.add(panelEval);
+                panelPrincipal.add(Box.createVerticalStrut(15));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaEvaluaciones.dispose();
+            }
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaEvaluaciones.add(scrollPane);
+        ventanaEvaluaciones.setVisible(true);
+    }
+
+    // Método para realizar evaluación usando la clase VentanaRealizarEvaluacion
+    private void realizarEvaluacion(Estudiantes estudiante, EvaluacionAsignada asignacion) {
+        VentanaRealizarEvaluacion ventana = new VentanaRealizarEvaluacion(estudiante, asignacion, this);
+        ventana.setVisible(true);
+    }
+
     private void abrirVentanaEstudiantes(Estudiantes estudiante) {
         // Cerrar ventana actual
         this.dispose();
@@ -3670,10 +5639,36 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
             }
         });
 
-        JPanel panelBoton = new JPanel();
-        panelBoton.add(btnVolver1);
+        JButton btnVerMisCursos = new JButton("Ver Mis Cursos");
+        btnVerMisCursos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarCursosMatriculados(estudiante);
+            }
+        });
+
+        JButton btnVerEvaluaciones = new JButton("Ver Evaluaciones");
+        btnVerEvaluaciones.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarEvaluacionesEstudiante(estudiante);
+            }
+        });
+
+        JButton btnDesempenoPersonal = new JButton("Desempeño Personal");
+        btnDesempenoPersonal.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mostrarDesempenoPersonal(estudiante);
+            }
+        });
+
+        // Panel para los botones - usando GridLayout
+        JPanel panelBoton = new JPanel(new GridLayout(3, 2, 10, 10));
+        panelBoton.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panelBoton.add(btnInfoGeneral);
         panelBoton.add(btnMatricularCurso);
+        panelBoton.add(btnVerMisCursos);
+        panelBoton.add(btnVerEvaluaciones);
+        panelBoton.add(btnDesempenoPersonal);
+        panelBoton.add(btnVolver1);
         ventanaEstudiantes.add(panelBoton, BorderLayout.CENTER);
 
         ventanaEstudiantes.setVisible(true);
@@ -3683,6 +5678,1069 @@ private void actualizarListaPreguntasConsulta(Evaluaciones evaluacion, JScrollPa
     
     
     
+    // Método para mostrar el desempeño personal del estudiante
+    private void mostrarDesempenoPersonal(Estudiantes estudiante) {
+        // Cargar las evaluaciones realizadas desde archivo
+        evaluacionesRealizadas = GestorArchivos.cargarEvaluacionesRealizadas();
+
+        JFrame ventanaDesempeno = new JFrame("Desempeño Personal");
+        ventanaDesempeno.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaDesempeno.setSize(900, 650);
+        ventanaDesempeno.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Mi Historial de Evaluaciones");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        // Nombre del estudiante
+        JLabel labelEstudiante = new JLabel("Estudiante: " + estudiante.getNombre() + " " +
+                                           estudiante.getApellido1() + " " + estudiante.getApellido2());
+        labelEstudiante.setFont(new Font("Arial", Font.BOLD, 16));
+        labelEstudiante.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelEstudiante);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Filtrar evaluaciones realizadas por este estudiante
+        List<EvaluacionRealizada> misEvaluaciones = new ArrayList<>();
+        for (EvaluacionRealizada realizada : evaluacionesRealizadas) {
+            if (realizada.getEstudiante().getIdentificacion().equals(estudiante.getIdentificacion()) &&
+                realizada.isFinalizada()) {
+                misEvaluaciones.add(realizada);
+            }
+        }
+
+        if (misEvaluaciones.isEmpty()) {
+            JLabel labelNoEvaluaciones = new JLabel("No has realizado ninguna evaluación aún");
+            labelNoEvaluaciones.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEvaluaciones.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEvaluaciones);
+        } else {
+            // Calcular estadísticas generales
+            double sumaCalificaciones = 0;
+            double maxCalificacion = 0;
+            double minCalificacion = Double.MAX_VALUE;
+            int totalEvaluaciones = misEvaluaciones.size();
+
+            for (EvaluacionRealizada realizada : misEvaluaciones) {
+                double cal = realizada.getCalificacionObtenida();
+                sumaCalificaciones += cal;
+                if (cal > maxCalificacion) maxCalificacion = cal;
+                if (cal < minCalificacion) minCalificacion = cal;
+            }
+
+            double promedio = sumaCalificaciones / totalEvaluaciones;
+
+            // Panel de estadísticas generales
+            JPanel panelEstadisticas = new JPanel();
+            panelEstadisticas.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+            panelEstadisticas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelEstadisticas.setBorder(BorderFactory.createTitledBorder("Resumen General"));
+
+            JLabel labelTotal = new JLabel("Total evaluaciones: " + totalEvaluaciones);
+            JLabel labelPromedio = new JLabel(String.format("Promedio: %.2f", promedio));
+            JLabel labelMax = new JLabel(String.format("Mejor: %.2f", maxCalificacion));
+            JLabel labelMin = new JLabel(String.format("Más baja: %.2f", minCalificacion));
+
+            panelEstadisticas.add(labelTotal);
+            panelEstadisticas.add(labelPromedio);
+            panelEstadisticas.add(labelMax);
+            panelEstadisticas.add(labelMin);
+
+            panelPrincipal.add(panelEstadisticas);
+            panelPrincipal.add(Box.createVerticalStrut(20));
+
+            // Ordenar por fecha (más recientes primero)
+            misEvaluaciones.sort((e1, e2) -> {
+                Date fecha1 = e1.getFechaHoraFin() != null ? e1.getFechaHoraFin() : e1.getFechaHoraInicio();
+                Date fecha2 = e2.getFechaHoraFin() != null ? e2.getFechaHoraFin() : e2.getFechaHoraInicio();
+                if (fecha1 == null || fecha2 == null) return 0;
+                return fecha2.compareTo(fecha1);
+            });
+
+            // Mostrar cada evaluación realizada
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+            for (EvaluacionRealizada realizada : misEvaluaciones) {
+                JPanel panelEvaluacion = new JPanel();
+                panelEvaluacion.setLayout(new BoxLayout(panelEvaluacion, BoxLayout.Y_AXIS));
+                panelEvaluacion.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)
+                ));
+                panelEvaluacion.setMaximumSize(new Dimension(800, 180));
+                panelEvaluacion.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Nombre de la evaluación
+                JLabel labelNombreEval = new JLabel(realizada.getEvaluacionAsignada().getEvaluacion().getNombre());
+                labelNombreEval.setFont(new Font("Arial", Font.BOLD, 16));
+                labelNombreEval.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelNombreEval);
+                panelEvaluacion.add(Box.createVerticalStrut(5));
+
+                // Información del curso y grupo
+                JLabel labelCurso = new JLabel("Curso: " +
+                    realizada.getEvaluacionAsignada().getGrupo().getCurso().getNombre() +
+                    " - Grupo " + realizada.getEvaluacionAsignada().getGrupo().getIdentificacionGrupo());
+                labelCurso.setFont(new Font("Arial", Font.PLAIN, 13));
+                labelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelCurso);
+                panelEvaluacion.add(Box.createVerticalStrut(8));
+
+                // Calificación obtenida
+                JLabel labelCalificacion = new JLabel(String.format("Calificación: %.2f puntos",
+                    realizada.getCalificacionObtenida()));
+                labelCalificacion.setFont(new Font("Arial", Font.BOLD, 18));
+                labelCalificacion.setForeground(new Color(0, 120, 0));
+                labelCalificacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelCalificacion);
+                panelEvaluacion.add(Box.createVerticalStrut(5));
+
+                // Fecha de realización
+                String fechaRealizacion = "Realizada el: ";
+                if (realizada.getFechaHoraFin() != null) {
+                    fechaRealizacion += sdf.format(realizada.getFechaHoraFin());
+                } else if (realizada.getFechaHoraInicio() != null) {
+                    fechaRealizacion += sdf.format(realizada.getFechaHoraInicio());
+                } else {
+                    fechaRealizacion += "Fecha no disponible";
+                }
+
+                JLabel labelFecha = new JLabel(fechaRealizacion);
+                labelFecha.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelFecha.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEvaluacion.add(labelFecha);
+                panelEvaluacion.add(Box.createVerticalStrut(10));
+
+                // Botón para ver detalles
+                JButton btnVerDetalle = new JButton("Ver Mis Respuestas");
+                btnVerDetalle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnVerDetalle.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        mostrarDetalleEvaluacionRealizada(realizada);
+                    }
+                });
+                panelEvaluacion.add(btnVerDetalle);
+
+                panelPrincipal.add(panelEvaluacion);
+                panelPrincipal.add(Box.createVerticalStrut(12));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaDesempeno.dispose();
+            }
+        });
+        panelPrincipal.add(Box.createVerticalStrut(15));
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaDesempeno.add(scrollPane);
+        ventanaDesempeno.setVisible(true);
+    }
+
+    // Método para mostrar ventana de generación de reportes
+    private void mostrarVentanaGenerarReporte(Profesores profesor) {
+        evaluaciones = GestorArchivos.cargarEvaluaciones();
+
+        JFrame ventanaReporte = new JFrame("Generar Reporte de Evaluación");
+        ventanaReporte.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaReporte.setSize(600, 500);
+        ventanaReporte.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Seleccione una Evaluación para Generar Reporte");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 18));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        if (evaluaciones.isEmpty()) {
+            JLabel labelNoEval = new JLabel("No hay evaluaciones disponibles");
+            labelNoEval.setFont(new Font("Arial", Font.PLAIN, 14));
+            labelNoEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelPrincipal.add(labelNoEval);
+        } else {
+            // Mostrar cada evaluación con un botón para generar reporte
+            for (Evaluaciones evaluacion : evaluaciones) {
+                JPanel panelEval = new JPanel();
+                panelEval.setLayout(new BoxLayout(panelEval, BoxLayout.Y_AXIS));
+                panelEval.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY, 1),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                panelEval.setMaximumSize(new Dimension(500, 100));
+                panelEval.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel labelNombre = new JLabel("Evaluación: " + evaluacion.getNombre());
+                labelNombre.setFont(new Font("Arial", Font.BOLD, 14));
+                labelNombre.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelNombre);
+
+                JLabel labelId = new JLabel("ID: " + evaluacion.getIdentificacion());
+                labelId.setFont(new Font("Arial", Font.PLAIN, 12));
+                labelId.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panelEval.add(labelId);
+                panelEval.add(Box.createVerticalStrut(8));
+
+                JButton btnGenerar = new JButton("Generar PDF");
+                btnGenerar.setAlignmentX(Component.LEFT_ALIGNMENT);
+                btnGenerar.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        generarReportePDF(evaluacion);
+                    }
+                });
+                panelEval.add(btnGenerar);
+
+                panelPrincipal.add(panelEval);
+                panelPrincipal.add(Box.createVerticalStrut(10));
+            }
+        }
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ventanaReporte.dispose();
+            }
+        });
+        panelPrincipal.add(Box.createVerticalStrut(10));
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaReporte.add(scrollPane);
+        ventanaReporte.setVisible(true);
+    }
+
+    // Método para generar el reporte PDF
+    private void generarReportePDF(Evaluaciones evaluacion) {
+        try {
+            // Crear un selector de archivo para guardar el PDF
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte PDF");
+            fileChooser.setSelectedFile(new File("Evaluacion_" + evaluacion.getIdentificacion() + "_" +
+                evaluacion.getNombre().replaceAll("[^a-zA-Z0-9]", "_") + ".pdf"));
+
+            int userSelection = fileChooser.showSaveDialog(null);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                String rutaArchivo = fileToSave.getAbsolutePath();
+                if (!rutaArchivo.toLowerCase().endsWith(".pdf")) {
+                    rutaArchivo += ".pdf";
+                }
+
+                // Crear el documento PDF
+                PDDocument document = new PDDocument();
+                PDPage page = new PDPage();
+                document.addPage(page);
+
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                float yPosition = 750;
+                float margin = 50;
+                float pageWidth = page.getMediaBox().getWidth();
+
+                // Título
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 18);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Evaluacion: " + evaluacion.getNombre());
+                contentStream.endText();
+                yPosition -= 30;
+
+                // ID
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("ID: " + evaluacion.getIdentificacion());
+                contentStream.endText();
+                yPosition -= 20;
+
+                // Instrucciones generales
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Instrucciones:");
+                contentStream.endText();
+                yPosition -= 15;
+
+                yPosition = escribirTextoMultilinea(contentStream, evaluacion.getInstrucGenerales(),
+                    margin, yPosition, pageWidth - 2 * margin, 10, document);
+                yPosition -= 10;
+
+                // Objetivos
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Objetivos:");
+                contentStream.endText();
+                yPosition -= 15;
+
+                for (String objetivo : evaluacion.getObjEva()) {
+                    yPosition = escribirTextoMultilinea(contentStream, "- " + objetivo,
+                        margin, yPosition, pageWidth - 2 * margin, 10, document);
+                    yPosition -= 5;
+
+                    if (yPosition < 50) {
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        contentStream = new PDPageContentStream(document, page);
+                        yPosition = 750;
+                    }
+                }
+                yPosition -= 10;
+
+                // Preguntas de Selección Única
+                int numeroPregunta = 1;
+                if (!evaluacion.getSeleccionesUnicas().isEmpty()) {
+                    for (SeleccionUnica pregunta : evaluacion.getSeleccionesUnicas()) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        char opcion = 'A';
+                        for (String opcionTexto : pregunta.getOpciones()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(opcion + ") " + opcionTexto);
+                            contentStream.endText();
+                            yPosition -= 15;
+                            opcion++;
+                        }
+                        yPosition -= 10;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Selección Múltiple
+                if (!evaluacion.getSeleccionesMultiples().isEmpty()) {
+                    for (SeleccionMultiple pregunta : evaluacion.getSeleccionesMultiples()) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". " + pregunta.getDescripcion() + " (Multiple)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        char opcion = 'A';
+                        for (String opcionTexto : pregunta.getOpciones()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(opcion + ") " + opcionTexto);
+                            contentStream.endText();
+                            yPosition -= 15;
+                            opcion++;
+                        }
+                        yPosition -= 10;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Falso/Verdadero
+                if (!evaluacion.getFalsoVerdaderos().isEmpty()) {
+                    for (FalsoVerdadero pregunta : evaluacion.getFalsoVerdaderos()) {
+                        if (yPosition < 80) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("( ) Verdadero    ( ) Falso");
+                        contentStream.endText();
+                        yPosition -= 20;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Pareo
+                if (!evaluacion.getPareos().isEmpty()) {
+                    for (Pareo pregunta : evaluacion.getPareos()) {
+                        if (yPosition < 150) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". Pareo: " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 20;
+
+                        // Columna 1
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Columna A:");
+                        contentStream.endText();
+                        yPosition -= 12;
+
+                        int i = 1;
+                        for (String item : pregunta.getColumna1()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(i + ". " + item);
+                            contentStream.endText();
+                            yPosition -= 12;
+                            i++;
+                        }
+                        yPosition -= 5;
+
+                        // Columna 2
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Columna B:");
+                        contentStream.endText();
+                        yPosition -= 12;
+
+                        i = 1;
+                        for (String item : pregunta.getColumna2()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText(i + ". " + item);
+                            contentStream.endText();
+                            yPosition -= 12;
+                            i++;
+                        }
+                        yPosition -= 15;
+                        numeroPregunta++;
+                    }
+                }
+
+                // Preguntas de Sopa de Letras
+                if (!evaluacion.getSopas().isEmpty()) {
+                    for (Sopa pregunta : evaluacion.getSopas()) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText(numeroPregunta + ". Sopa de Letras: " + pregunta.getDescripcion());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("(" + pregunta.getPuntos() + " puntos)");
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Palabras a buscar: " + String.join(", ", pregunta.getPalabras()));
+                        contentStream.endText();
+                        yPosition -= 20;
+                        numeroPregunta++;
+                    }
+                }
+
+                contentStream.close();
+                document.save(rutaArchivo);
+                document.close();
+
+                JOptionPane.showMessageDialog(null,
+                    "Reporte PDF generado exitosamente en:\n" + rutaArchivo,
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al generar el PDF: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    // Método auxiliar para escribir texto multilínea
+    private float escribirTextoMultilinea(PDPageContentStream contentStream, String texto,
+                                          float x, float y, float maxWidth, float fontSize,
+                                          PDDocument document) throws IOException {
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), fontSize);
+
+        String[] palabras = texto.split(" ");
+        StringBuilder linea = new StringBuilder();
+
+        for (String palabra : palabras) {
+            String lineaTest = linea + (linea.length() > 0 ? " " : "") + palabra;
+            float width = new PDType1Font(Standard14Fonts.FontName.HELVETICA).getStringWidth(lineaTest) / 1000 * fontSize;
+
+            if (width > maxWidth) {
+                contentStream.beginText();
+                contentStream.newLineAtOffset(x, y);
+                contentStream.showText(linea.toString());
+                contentStream.endText();
+                y -= fontSize + 2;
+                linea = new StringBuilder(palabra);
+            } else {
+                linea = new StringBuilder(lineaTest);
+            }
+        }
+
+        if (linea.length() > 0) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(x, y);
+            contentStream.showText(linea.toString());
+            contentStream.endText();
+            y -= fontSize + 2;
+        }
+
+        return y;
+    }
+
+    // Método para mostrar ventana de reportes del administrador
+    private void mostrarVentanaReportesAdministrador() {
+        cursos = GestorArchivos.cargarCursos();
+
+        JFrame ventanaReportes = new JFrame("Reportes de Administrador");
+        ventanaReportes.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ventanaReportes.setSize(600, 550);
+        ventanaReportes.setLocationRelativeTo(null);
+
+        JPanel panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Título
+        JLabel labelTitulo = new JLabel("Generar Reportes");
+        labelTitulo.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelPrincipal.add(labelTitulo);
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Tipo de reporte
+        JLabel labelTipo = new JLabel("Tipo de reporte:");
+        labelTipo.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelTipo);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        String[] tiposReporte = {"Lista de Estudiantes", "Estadísticas de Matrícula"};
+        JComboBox<String> comboTipo = new JComboBox<>(tiposReporte);
+        comboTipo.setMaximumSize(new Dimension(400, 30));
+        comboTipo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(comboTipo);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Fecha de vigencia
+        JLabel labelFecha = new JLabel("Fecha de vigencia (yyyy-MM-dd):");
+        labelFecha.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelFecha);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        JTextField txtFecha = new JTextField();
+        txtFecha.setMaximumSize(new Dimension(200, 25));
+        txtFecha.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(txtFecha);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Alcance del reporte
+        JLabel labelAlcance = new JLabel("Alcance del reporte:");
+        labelAlcance.setFont(new Font("Arial", Font.BOLD, 14));
+        panelPrincipal.add(labelAlcance);
+        panelPrincipal.add(Box.createVerticalStrut(10));
+
+        String[] alcances = {"Todos los cursos y grupos", "Un curso específico", "Un grupo específico"};
+        JComboBox<String> comboAlcance = new JComboBox<>(alcances);
+        comboAlcance.setMaximumSize(new Dimension(400, 30));
+        comboAlcance.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelPrincipal.add(comboAlcance);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Panel para selección de curso (inicialmente oculto)
+        JPanel panelCurso = new JPanel();
+        panelCurso.setLayout(new BoxLayout(panelCurso, BoxLayout.Y_AXIS));
+        panelCurso.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelCurso.setVisible(false);
+
+        JLabel labelCurso = new JLabel("Seleccione el curso:");
+        labelCurso.setFont(new Font("Arial", Font.BOLD, 12));
+        panelCurso.add(labelCurso);
+        panelCurso.add(Box.createVerticalStrut(5));
+
+        JComboBox<String> comboCurso = new JComboBox<>();
+        for (Cursos curso : cursos) {
+            comboCurso.addItem(curso.getNombre() + " (ID: " + curso.getIdentificacion() + ")");
+        }
+        comboCurso.setMaximumSize(new Dimension(400, 30));
+        panelCurso.add(comboCurso);
+        panelPrincipal.add(panelCurso);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Panel para selección de grupo (inicialmente oculto)
+        JPanel panelGrupo = new JPanel();
+        panelGrupo.setLayout(new BoxLayout(panelGrupo, BoxLayout.Y_AXIS));
+        panelGrupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelGrupo.setVisible(false);
+
+        JLabel labelGrupo = new JLabel("Seleccione el grupo:");
+        labelGrupo.setFont(new Font("Arial", Font.BOLD, 12));
+        panelGrupo.add(labelGrupo);
+        panelGrupo.add(Box.createVerticalStrut(5));
+
+        JComboBox<String> comboGrupo = new JComboBox<>();
+        comboGrupo.setMaximumSize(new Dimension(400, 30));
+        panelGrupo.add(comboGrupo);
+        panelPrincipal.add(panelGrupo);
+
+        // Listener para cambiar visibilidad según alcance
+        comboAlcance.addActionListener(e -> {
+            int seleccion = comboAlcance.getSelectedIndex();
+            panelCurso.setVisible(seleccion >= 1);
+            panelGrupo.setVisible(seleccion == 2);
+
+            if (seleccion >= 1 && comboCurso.getItemCount() > 0) {
+                int cursoIndex = comboCurso.getSelectedIndex();
+                if (cursoIndex >= 0 && cursoIndex < cursos.size()) {
+                    Cursos cursoSeleccionado = cursos.get(cursoIndex);
+                    comboGrupo.removeAllItems();
+                    for (Grupos grupo : cursoSeleccionado.getGrupos()) {
+                        comboGrupo.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                    }
+                }
+            }
+
+            ventanaReportes.revalidate();
+            ventanaReportes.repaint();
+        });
+
+        // Listener para actualizar grupos cuando cambia el curso
+        comboCurso.addActionListener(e -> {
+            if (comboCurso.getSelectedIndex() >= 0) {
+                int cursoIndex = comboCurso.getSelectedIndex();
+                if (cursoIndex < cursos.size()) {
+                    Cursos cursoSeleccionado = cursos.get(cursoIndex);
+                    comboGrupo.removeAllItems();
+                    for (Grupos grupo : cursoSeleccionado.getGrupos()) {
+                        comboGrupo.addItem("Grupo " + grupo.getIdentificacionGrupo());
+                    }
+                }
+            }
+        });
+
+        panelPrincipal.add(Box.createVerticalStrut(20));
+
+        // Botón generar
+        JButton btnGenerar = new JButton("Generar Reporte PDF");
+        btnGenerar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnGenerar.addActionListener(e -> {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                Date fechaVigencia = sdf.parse(txtFecha.getText().trim());
+
+                int tipoReporte = comboTipo.getSelectedIndex();
+                int alcance = comboAlcance.getSelectedIndex();
+
+                Cursos cursoSeleccionado = null;
+                Grupos grupoSeleccionado = null;
+
+                if (alcance >= 1 && comboCurso.getSelectedIndex() >= 0) {
+                    cursoSeleccionado = cursos.get(comboCurso.getSelectedIndex());
+                }
+
+                if (alcance == 2 && comboGrupo.getSelectedIndex() >= 0 && cursoSeleccionado != null) {
+                    grupoSeleccionado = cursoSeleccionado.getGrupos().get(comboGrupo.getSelectedIndex());
+                }
+
+                if (tipoReporte == 0) {
+                    generarReporteListaEstudiantes(fechaVigencia, alcance, cursoSeleccionado, grupoSeleccionado);
+                } else {
+                    generarReporteEstadisticas(fechaVigencia, alcance, cursoSeleccionado, grupoSeleccionado);
+                }
+            } catch (ParseException ex) {
+                JOptionPane.showMessageDialog(ventanaReportes,
+                    "Formato de fecha inválido. Use yyyy-MM-dd",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        panelPrincipal.add(btnGenerar);
+        panelPrincipal.add(Box.createVerticalStrut(15));
+
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCerrar.addActionListener(e -> {
+            ventanaReportes.dispose();
+            abrirVentanaAdministradores();
+        });
+        panelPrincipal.add(btnCerrar);
+
+        JScrollPane scrollPane = new JScrollPane(panelPrincipal);
+        ventanaReportes.add(scrollPane);
+        ventanaReportes.setVisible(true);
+    }
+
+    // Método para generar reporte de lista de estudiantes
+    private void generarReporteListaEstudiantes(Date fechaVigencia, int alcance, Cursos cursoEspecifico, Grupos grupoEspecifico) {
+        try {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte de Lista de Estudiantes");
+            fileChooser.setSelectedFile(new File("Reporte_Lista_Estudiantes_" +
+                new SimpleDateFormat("yyyyMMdd").format(fechaVigencia) + ".pdf"));
+
+            if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                String rutaArchivo = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!rutaArchivo.toLowerCase().endsWith(".pdf")) {
+                    rutaArchivo += ".pdf";
+                }
+
+                PDDocument document = new PDDocument();
+                PDPage page = new PDPage();
+                document.addPage(page);
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                float yPosition = 750;
+                float margin = 50;
+
+                // Título
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Lista de Estudiantes Matriculados");
+                contentStream.endText();
+                yPosition -= 20;
+
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Fecha de vigencia: " + sdf.format(fechaVigencia));
+                contentStream.endText();
+                yPosition -= 25;
+
+                // Obtener grupos vigentes según alcance
+                List<Grupos> gruposVigentes = obtenerGruposVigentes(fechaVigencia, alcance, cursoEspecifico, grupoEspecifico);
+
+                if (gruposVigentes.isEmpty()) {
+                    contentStream.beginText();
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                    contentStream.newLineAtOffset(margin, yPosition);
+                    contentStream.showText("No hay grupos vigentes para la fecha especificada.");
+                    contentStream.endText();
+                } else {
+                    for (Grupos grupo : gruposVigentes) {
+                        if (yPosition < 100) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        // Encabezado del grupo
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 13);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("Curso: " + grupo.getCurso().getNombre());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("Grupo: " + grupo.getIdentificacionGrupo() + " | " +
+                            "Inicio: " + sdf.format(grupo.getFechaInicio()) + " | " +
+                            "Fin: " + sdf.format(grupo.getFechaFin()));
+                        contentStream.endText();
+                        yPosition -= 20;
+
+                        // Lista de estudiantes ordenada alfabéticamente
+                        List<Estudiantes> estudiantesOrdenados = new ArrayList<>(grupo.getEstudiantes());
+                        estudiantesOrdenados.sort((e1, e2) -> {
+                            int comparacion = e1.getApellido1().compareToIgnoreCase(e2.getApellido1());
+                            if (comparacion == 0) {
+                                comparacion = e1.getApellido2().compareToIgnoreCase(e2.getApellido2());
+                            }
+                            if (comparacion == 0) {
+                                comparacion = e1.getNombre().compareToIgnoreCase(e2.getNombre());
+                            }
+                            return comparacion;
+                        });
+
+                        if (estudiantesOrdenados.isEmpty()) {
+                            contentStream.beginText();
+                            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                            contentStream.newLineAtOffset(margin + 10, yPosition);
+                            contentStream.showText("Sin estudiantes matriculados");
+                            contentStream.endText();
+                            yPosition -= 15;
+                        } else {
+                            for (Estudiantes estudiante : estudiantesOrdenados) {
+                                if (yPosition < 50) {
+                                    contentStream.close();
+                                    page = new PDPage();
+                                    document.addPage(page);
+                                    contentStream = new PDPageContentStream(document, page);
+                                    yPosition = 750;
+                                }
+
+                                contentStream.beginText();
+                                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                                contentStream.newLineAtOffset(margin + 10, yPosition);
+                                contentStream.showText("- " + estudiante.getApellido1() + " " +
+                                    estudiante.getApellido2() + ", " + estudiante.getNombre() +
+                                    " (ID: " + estudiante.getIdentificacion() + ")");
+                                contentStream.endText();
+                                yPosition -= 13;
+                            }
+                        }
+                        yPosition -= 10;
+                    }
+                }
+
+                contentStream.close();
+                document.save(rutaArchivo);
+                document.close();
+
+                JOptionPane.showMessageDialog(null,
+                    "Reporte generado exitosamente en:\n" + rutaArchivo,
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al generar el PDF: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Método para generar reporte de estadísticas
+    private void generarReporteEstadisticas(Date fechaVigencia, int alcance, Cursos cursoEspecifico, Grupos grupoEspecifico) {
+        try {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte de Estadísticas");
+            fileChooser.setSelectedFile(new File("Reporte_Estadisticas_" +
+                new SimpleDateFormat("yyyyMMdd").format(fechaVigencia) + ".pdf"));
+
+            if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                String rutaArchivo = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!rutaArchivo.toLowerCase().endsWith(".pdf")) {
+                    rutaArchivo += ".pdf";
+                }
+
+                PDDocument document = new PDDocument();
+                PDPage page = new PDPage();
+                document.addPage(page);
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                float yPosition = 750;
+                float margin = 50;
+
+                // Título
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Estadisticas de Matricula");
+                contentStream.endText();
+                yPosition -= 20;
+
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText("Fecha de vigencia: " + sdf.format(fechaVigencia));
+                contentStream.endText();
+                yPosition -= 25;
+
+                // Obtener grupos vigentes según alcance
+                List<Grupos> gruposVigentes = obtenerGruposVigentes(fechaVigencia, alcance, cursoEspecifico, grupoEspecifico);
+
+                if (gruposVigentes.isEmpty()) {
+                    contentStream.beginText();
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                    contentStream.newLineAtOffset(margin, yPosition);
+                    contentStream.showText("No hay grupos vigentes para la fecha especificada.");
+                    contentStream.endText();
+                } else {
+                    int totalEstudiantes = 0;
+
+                    for (Grupos grupo : gruposVigentes) {
+                        if (yPosition < 80) {
+                            contentStream.close();
+                            page = new PDPage();
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            yPosition = 750;
+                        }
+
+                        int cantidadEstudiantes = grupo.getEstudiantes().size();
+                        totalEstudiantes += cantidadEstudiantes;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                        contentStream.newLineAtOffset(margin, yPosition);
+                        contentStream.showText("Curso: " + grupo.getCurso().getNombre());
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Grupo: " + grupo.getIdentificacionGrupo() + " | " +
+                            "Periodo: " + sdf.format(grupo.getFechaInicio()) + " - " + sdf.format(grupo.getFechaFin()));
+                        contentStream.endText();
+                        yPosition -= 15;
+
+                        contentStream.beginText();
+                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                        contentStream.newLineAtOffset(margin + 10, yPosition);
+                        contentStream.showText("Cantidad de estudiantes: " + cantidadEstudiantes);
+                        contentStream.endText();
+                        yPosition -= 20;
+                    }
+
+                    // Total general
+                    yPosition -= 10;
+                    contentStream.beginText();
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
+                    contentStream.newLineAtOffset(margin, yPosition);
+                    contentStream.showText("TOTAL GENERAL: " + totalEstudiantes + " estudiantes");
+                    contentStream.endText();
+                }
+
+                contentStream.close();
+                document.save(rutaArchivo);
+                document.close();
+
+                JOptionPane.showMessageDialog(null,
+                    "Reporte generado exitosamente en:\n" + rutaArchivo,
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,
+                "Error al generar el PDF: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Método auxiliar para obtener grupos vigentes
+    private List<Grupos> obtenerGruposVigentes(Date fechaVigencia, int alcance, Cursos cursoEspecifico, Grupos grupoEspecifico) {
+        List<Grupos> gruposVigentes = new ArrayList<>();
+
+        if (alcance == 2 && grupoEspecifico != null) {
+            // Un grupo específico
+            if (grupoEspecifico.getFechaFin() != null &&
+                !grupoEspecifico.getFechaFin().before(fechaVigencia)) {
+                gruposVigentes.add(grupoEspecifico);
+            }
+        } else if (alcance == 1 && cursoEspecifico != null) {
+            // Un curso específico
+            for (Grupos grupo : cursoEspecifico.getGrupos()) {
+                if (grupo.getFechaFin() != null &&
+                    !grupo.getFechaFin().before(fechaVigencia)) {
+                    gruposVigentes.add(grupo);
+                }
+            }
+        } else {
+            // Todos los cursos y grupos
+            for (Cursos curso : cursos) {
+                for (Grupos grupo : curso.getGrupos()) {
+                    if (grupo.getFechaFin() != null &&
+                        !grupo.getFechaFin().before(fechaVigencia)) {
+                        gruposVigentes.add(grupo);
+                    }
+                }
+            }
+        }
+
+        return gruposVigentes;
+    }
+
     public static void main(String[] args) {
         // Ejecutar en el Event Dispatch Thread
         SwingUtilities.invokeLater(new Runnable() {

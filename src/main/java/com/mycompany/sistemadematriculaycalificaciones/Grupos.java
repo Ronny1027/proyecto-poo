@@ -42,6 +42,12 @@ public class Grupos implements Serializable {
     public List<Estudiantes> getEstudiantes() {
         return estudiantes;
     }
+    public Date getFechaInicio() {
+        return fechaInicio;
+    }
+    public Date getFechaFin() {
+        return fechaFin;
+    }
    //Metodos de validacion.
    // Validar la identificacion.
     public String validarIdentificacionGrupo() {

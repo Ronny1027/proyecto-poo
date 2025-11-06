@@ -32,6 +32,7 @@ public class Profesores implements Serializable{
     private static final long serialVersionUID = 1L;
     //Constructor
     public Profesores() {
+        this.gruposImpartiendo = new ArrayList<>();
     }
     public Profesores(String nombre, String apellido1, String apellido2,
                   String identificacion, String telefono, String correo,
@@ -380,6 +381,14 @@ public String validarTodasLasCertificaciones() {
         }
         return false;
     }
-    
+
+    // Método para obtener los cursos impartidos (con sus grupos)
+    public List<Grupos> getCursosImpartidos() {
+        if (gruposImpartiendo == null) {
+            return new ArrayList<>();
+        }
+        return gruposImpartiendo;
+    }
+
 }
 
